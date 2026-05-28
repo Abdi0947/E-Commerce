@@ -1,43 +1,147 @@
-import { PHONE } from "../data/products";
+import { useState, useEffect } from "react";
+
+const HERO_IMAGE   = "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=900&auto=format&fit=crop&q=80";
+const HERO_IMAGE_2 = "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=900&auto=format&fit=crop&q=80";
+const HERO_IMAGE_3 = "https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=900&auto=format&fit=crop&q=80";
+
+const slides = [
+  {
+    badge: "NEW LAUNCH",
+    title: "TECH THAT",
+    accent: "EMPOWERS YOU",
+    subtitle: "Discover the latest electronics with unbeatable performance.",
+    cta: "Shop Now",
+    image: HERO_IMAGE,
+    bg: "linear-gradient(135deg, #0d1b3e 0%, #0f172a 40%, #1a1040 100%)",
+    glow: "rgba(59,130,246,0.18)",
+  },
+  {
+    badge: "BEST SELLERS",
+    title: "PREMIUM SOUND",
+    accent: "EVERYWHERE",
+    subtitle: "Experience the world's finest audio technology at your fingertips.",
+    cta: "Explore Audio",
+    image: HERO_IMAGE_2,
+    bg: "linear-gradient(135deg, #0f1a2e 0%, #0a0f1e 40%, #1a0f30 100%)",
+    glow: "rgba(124,58,237,0.2)",
+  },
+  {
+    badge: "HOT DEALS",
+    title: "CAPTURE EVERY",
+    accent: "MOMENT",
+    subtitle: "Shop our latest cameras and accessories with exclusive discounts.",
+    cta: "See Deals",
+    image: HERO_IMAGE_3,
+    bg: "linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%)",
+    glow: "rgba(6,182,212,0.18)",
+  },
+];
 
 export default function Hero({ navigate }) {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActive((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const prev = () => setActive((a) => (a - 1 + slides.length) % slides.length);
+  const next = () => setActive((a) => (a + 1) % slides.length);
+
   return (
-    <section className="hero">
-      <div className="hero-content">
-        <div className="hero-badge">🇪🇹 Ethiopia's #1 Electronics Shop</div>
-        <h1 className="hero-title">
-          Premium Electronics<br />
-          <span className="hero-accent">at Your Doorstep</span>
-        </h1>
-        <p className="hero-subtitle">
-          Browse our curated collection of mice, keyboards, hubs, earbuds & more.
-          Order in seconds — just call or message us!
-        </p>
-        <div className="hero-actions">
-          <button className="btn-primary" onClick={() => navigate("home", "products")}>
-            Shop Now
-          </button>
-          <a className="btn-outline" href={`tel:${PHONE}`}>
-            📞 {PHONE}
-          </a>
-        </div>
+    <section className="relative bg-navy overflow-hidden h-[440px] select-none" aria-label="Featured promotions">
+      {slides.map((slide, i) => (
+        <div
+          key={i}
+          className={`absolute inset-0 flex items-center transition-opacity duration-[600ms] ease-in-out ${
+            active === i ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* Background gradient */}
+          <div className="absolute inset-0" style={{ background: slide.bg }} />
+          <div
+            className="absolute inset-0 z-[1]"
+            style={{ background: `radial-gradient(ellipse 60% 80% at 65% 50%, ${slide.glow} 0%, transparent 70%)` }}
+          />
 
-        <div className="hero-stats">
-          <div className="stat"><span className="stat-num">50+</span><span className="stat-label">Products</span></div>
-          <div className="stat-div" />
-          <div className="stat"><span className="stat-num">500+</span><span className="stat-label">Orders</span></div>
-          <div className="stat-div" />
-          <div className="stat"><span className="stat-num">24h</span><span className="stat-label">Delivery</span></div>
-        </div>
-      </div>
+          {/* Slide content */}
+          <div
+            className="max-w-[1280px] mx-auto px-16 w-full flex items-center justify-between h-full relative z-[2]"
+          >
+            <div className="max-w-[480px]">
+              <span className="inline-block bg-primary text-white text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-[18px]">
+                {slide.badge}
+              </span>
+              <h1 className="text-[46px] font-extrabold text-white leading-[1.1] tracking-[-1.5px] mb-4">
+                {slide.title}
+                <br />
+                <span className="text-primary-light">{slide.accent}</span>
+              </h1>
+              <p className="text-[15px] text-slate-300 leading-relaxed mb-7 max-w-[360px]">
+                {slide.subtitle}
+              </p>
+              <button
+                className="inline-flex items-center gap-2 bg-primary text-white px-7 py-[13px] rounded-md text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(26,86,219,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(26,86,219,0.5)]"
+                onClick={() => navigate("home", "products")}
+                id={`hero-cta-${i}`}
+              >
+                {slide.cta}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+            </div>
 
-      <div className="hero-visual">
-        <div className="hero-glow" />
-        <div className="hero-emoji-grid">
-          {["🖱️","⌨️","🎧","💻","🔌","📱","🖥️","⚡"].map((e, i) => (
-            <div key={i} className="hero-emoji" style={{ animationDelay: `${i * 0.15}s` }}>{e}</div>
-          ))}
+            <div className="shrink-0 w-[480px] h-[380px] items-center justify-center hidden lg:flex">
+              <img
+                src={slide.image}
+                alt={`${slide.title} ${slide.accent}`}
+                loading={i === 0 ? "eager" : "lazy"}
+                className="w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(59,130,246,0.3)]"
+              />
+            </div>
+          </div>
         </div>
+      ))}
+
+      {/* Arrow buttons */}
+      <button
+        className="absolute top-1/2 -translate-y-1/2 left-5 z-10 w-10 h-10 rounded-full border-[1.5px] border-white/20 bg-white/[0.08] backdrop-blur-sm text-white flex items-center justify-center text-[18px] cursor-pointer transition-all hover:bg-white/[0.18] hover:border-white/40"
+        onClick={prev}
+        aria-label="Previous slide"
+      >
+        ‹
+      </button>
+      <button
+        className="absolute top-1/2 -translate-y-1/2 right-5 z-10 w-10 h-10 rounded-full border-[1.5px] border-white/20 bg-white/[0.08] backdrop-blur-sm text-white flex items-center justify-center text-[18px] cursor-pointer transition-all hover:bg-white/[0.18] hover:border-white/40"
+        onClick={next}
+        aria-label="Next slide"
+      >
+        ›
+      </button>
+
+      {/* Dot indicators */}
+      <div
+        className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10"
+        role="tablist"
+        aria-label="Slide navigation"
+      >
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            id={`hero-dot-${i}`}
+            className={`h-2 rounded-full border-none cursor-pointer transition-all p-0 ${
+              active === i ? "bg-white w-6" : "bg-white/35 w-2"
+            }`}
+            onClick={() => setActive(i)}
+            role="tab"
+            aria-selected={active === i}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
       </div>
     </section>
   );

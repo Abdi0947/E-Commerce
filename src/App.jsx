@@ -8,8 +8,6 @@ import Admin from "./pages/Admin";
 function App() {
   const [page, setPage] = useState("home");
   const [productId, setProductId] = useState(null);
-
-  // Scroll to products section after navigation if requested
   const [scrollTarget, setScrollTarget] = useState(null);
 
   const navigate = (target, scroll = null, id = null) => {
@@ -30,10 +28,10 @@ function App() {
   }, [scrollTarget]);
 
   return (
-    <div className="app">
+    <div className="flex flex-col min-h-screen">
       <Navbar page={page} navigate={navigate} />
 
-      <div className="page-content">
+      <div className="flex-1">
         {page === "home" && <Home navigate={navigate} />}
         {page === "product" && <ProductDetails productId={productId} navigate={navigate} />}
         {page === "admin" && <Admin navigate={navigate} />}
@@ -41,9 +39,9 @@ function App() {
 
       {page !== "admin" && <Footer />}
 
-      {/* Hidden admin trigger — triple-click the footer logo or navigate to /admin */}
+      {/* Hidden admin trigger */}
       <button
-        className="admin-secret-btn"
+        className="fixed bottom-4 right-4 w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-all z-50 cursor-pointer"
         onClick={() => navigate("admin")}
         title="Admin"
       >
