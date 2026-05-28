@@ -183,6 +183,6 @@ export const categories = [
 ];
 
 export const PHONE = "+251947526347";
-export const TELEGRAM = "https://t.me/your_store_handle";
+export const TELEGRAM = "https://t.me/ElectroHub_Support";
 
 export default products;
