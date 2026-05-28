@@ -1,12 +1,14 @@
 
 
-export default function ProductCard({ product, navigate }) {
+export default function ProductCard({ product, navigate, index = 0 }) {
   const available = product.availability === "available";
-
+  
+  // Calculate a staggered delay class up to 400ms
+  const delayClass = `delay-${Math.min((index % 5 + 1) * 100, 400)}`;
 
   return (
     <div
-      className="group bg-white border-[1.5px] border-slate-200 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 w-full flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] hover:border-slate-300 hover:-translate-y-1"
+      className={`group bg-white border-[1.5px] border-slate-200/60 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 w-full flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(79,70,229,0.12)] hover:border-primary/30 hover:-translate-y-1.5 animate-slide-up ${delayClass}`}
       onClick={() => navigate("product", null, product.id)}
     >
       {/* Image */}

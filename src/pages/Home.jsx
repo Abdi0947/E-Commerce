@@ -27,15 +27,15 @@ export default function Home({ navigate }) {
 
       {/* ── Featured Products ── */}
       {featured.length > 0 && (
-        <section className="py-10 bg-white">
+        <section className="py-10 bg-white animate-fade-in delay-200">
           <div className="max-w-[1280px] mx-auto px-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-[22px] font-bold text-slate-900">⭐ Featured Products</h2>
               <p className="text-sm text-slate-500">Hand-picked top sellers</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-              {featured.map((p) => (
-                <ProductCard key={p.id} product={p} navigate={navigate} />
+              {featured.map((p, idx) => (
+                <ProductCard key={p.id} product={p} navigate={navigate} index={idx} />
               ))}
             </div>
           </div>
@@ -43,7 +43,7 @@ export default function Home({ navigate }) {
       )}
 
       {/* ── All Products ── */}
-      <section className="py-10 bg-slate-50" id="products">
+      <section className="py-10 bg-slate-50 animate-fade-in delay-300" id="products">
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-[22px] font-bold text-slate-900">🛒 All Products</h2>
@@ -84,8 +84,8 @@ export default function Home({ navigate }) {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-              {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} navigate={navigate} />
+              {filtered.map((p, idx) => (
+                <ProductCard key={p.id} product={p} navigate={navigate} index={idx} />
               ))}
             </div>
           )}

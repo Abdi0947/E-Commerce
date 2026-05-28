@@ -12,8 +12,8 @@ const slides = [
     subtitle: "Discover the latest electronics with unbeatable performance.",
     cta: "Shop Now",
     image: HERO_IMAGE,
-    bg: "linear-gradient(135deg, #0d1b3e 0%, #0f172a 40%, #1a1040 100%)",
-    glow: "rgba(59,130,246,0.18)",
+    bg: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 40%, #312e81 100%)",
+    glow: "rgba(99,102,241,0.25)",
   },
   {
     badge: "BEST SELLERS",
@@ -22,8 +22,8 @@ const slides = [
     subtitle: "Experience the world's finest audio technology at your fingertips.",
     cta: "Explore Audio",
     image: HERO_IMAGE_2,
-    bg: "linear-gradient(135deg, #0f1a2e 0%, #0a0f1e 40%, #1a0f30 100%)",
-    glow: "rgba(124,58,237,0.2)",
+    bg: "linear-gradient(135deg, #0f172a 0%, #172554 40%, #1e1b4b 100%)",
+    glow: "rgba(139,92,246,0.25)",
   },
   {
     badge: "HOT DEALS",
@@ -32,8 +32,8 @@ const slides = [
     subtitle: "Shop our latest cameras and accessories with exclusive discounts.",
     cta: "See Deals",
     image: HERO_IMAGE_3,
-    bg: "linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%)",
-    glow: "rgba(6,182,212,0.18)",
+    bg: "linear-gradient(135deg, #020617 0%, #1e1b4b 50%, #0f172a 100%)",
+    glow: "rgba(168,85,247,0.2)",
   },
 ];
 
@@ -70,7 +70,7 @@ export default function Hero({ navigate }) {
           <div
             className="max-w-[1280px] mx-auto px-16 w-full flex items-center justify-between h-full relative z-[2]"
           >
-            <div className="max-w-[480px]">
+            <div className={`max-w-[480px] ${active === i ? "animate-slide-up" : "opacity-0"}`}>
               <span className="inline-block bg-primary text-white text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-[18px]">
                 {slide.badge}
               </span>
@@ -83,7 +83,7 @@ export default function Hero({ navigate }) {
                 {slide.subtitle}
               </p>
               <button
-                className="inline-flex items-center gap-2 bg-primary text-white px-7 py-[13px] rounded-md text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(26,86,219,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(26,86,219,0.5)]"
+                className="inline-flex items-center gap-2 bg-primary text-white px-7 py-[13px] rounded-md text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(79,70,229,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(79,70,229,0.5)]"
                 onClick={() => navigate("home", "products")}
                 id={`hero-cta-${i}`}
               >
@@ -95,12 +95,12 @@ export default function Hero({ navigate }) {
               </button>
             </div>
 
-            <div className="shrink-0 w-[480px] h-[380px] items-center justify-center hidden lg:flex">
+            <div className={`shrink-0 w-[480px] h-[380px] items-center justify-center hidden lg:flex ${active === i ? "animate-fade-in delay-200" : "opacity-0"}`}>
               <img
                 src={slide.image}
                 alt={`${slide.title} ${slide.accent}`}
                 loading={i === 0 ? "eager" : "lazy"}
-                className="w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(59,130,246,0.3)]"
+                className="w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(79,70,229,0.3)] transition-transform duration-[600ms] hover:scale-105"
               />
             </div>
           </div>

@@ -32,18 +32,18 @@ export default function ProductDetails({ productId, navigate }) {
   const disabledCls = "bg-slate-200 text-slate-400 pointer-events-none opacity-60";
 
   return (
-    <main className="max-w-[900px] mx-auto py-10 px-6">
+    <main className="max-w-[900px] mx-auto py-10 px-6 animate-fade-in">
 
       {/* Back button */}
       <button
-        className="flex items-center gap-2 text-sm font-medium text-primary bg-transparent border-none cursor-pointer mb-6 transition-all hover:gap-3"
+        className="flex items-center gap-2 text-sm font-medium text-primary bg-transparent border-none cursor-pointer mb-6 transition-all hover:gap-3 hover:text-primary-dark"
         onClick={() => navigate("home")}
       >
         ← Back to Shop
       </button>
 
       {/* Detail card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white border-[1.5px] border-slate-200 rounded-2xl p-8 shadow-md">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white border-[1.5px] border-slate-200/60 rounded-2xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] animate-slide-up delay-100">
 
         {/* Left Column: Images & Description */}
         <div className="flex flex-col gap-6">
@@ -107,7 +107,7 @@ export default function ProductDetails({ productId, navigate }) {
               href={`${TELEGRAM}?text=${encodeURIComponent(tgMsg)}`}
               target="_blank"
               rel="noreferrer"
-              className={`${btnBase} ${available ? "bg-sky-500 text-white hover:bg-sky-600 shadow-[0_4px_14px_rgba(14,165,233,0.35)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.45)]" : disabledCls}`}
+              className={`${btnBase} ${available ? "bg-gradient-to-r from-sky-400 to-blue-500 text-white hover:from-sky-500 hover:to-blue-600 shadow-[0_4px_14px_rgba(14,165,233,0.35)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.45)] hover:-translate-y-0.5" : disabledCls}`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-2.04 9.613c-.153.68-.553.847-1.12.527l-3.1-2.285-1.496 1.44c-.166.166-.305.305-.625.305l.222-3.166 5.754-5.196c.25-.222-.055-.345-.388-.123L6.25 14.43l-3.07-.958c-.666-.208-.68-.666.14-.986l11.975-4.617c.555-.2 1.04.136.267.98z"/>
@@ -118,7 +118,7 @@ export default function ProductDetails({ productId, navigate }) {
             {/* Phone */}
             <a
               href={`tel:${PHONE}`}
-              className={`${btnBase} ${available ? "bg-primary text-white hover:bg-primary-dark shadow-[0_4px_14px_rgba(26,86,219,0.35)] hover:shadow-[0_6px_20px_rgba(26,86,219,0.45)]" : disabledCls}`}
+              className={`${btnBase} ${available ? "bg-gradient-to-r from-primary to-primary-light text-white hover:from-primary-dark hover:to-primary shadow-[0_4px_14px_rgba(79,70,229,0.35)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.45)] hover:-translate-y-0.5" : disabledCls}`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.49 12 19.79 19.79 0 0 1 1.43 3.44 2 2 0 0 1 3.4 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/>

@@ -6,7 +6,7 @@ export default function Navbar({ page, navigate }) {
 
   const navLinks = [
     { label: "Home",         target: "home" },
-    { label: "Contact",      target: "home" },
+    { label: "Contact",      target: "contact" },
   ];
 
   const categories = [
@@ -15,7 +15,7 @@ export default function Navbar({ page, navigate }) {
   ];
 
   return (
-    <nav className="sticky top-0 z-[1000] bg-white shadow-sm">
+    <nav className="sticky top-0 z-[1000] glassmorphism border-b border-slate-200/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] animate-fade-in">
 
       {/* ─── TOP BAR ─── */}
       <div className="border-b border-slate-200">

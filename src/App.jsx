@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import ProductDetails from "./pages/ProductDetails";
+import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
 
       <div className="flex-1">
         {page === "home" && <Home navigate={navigate} />}
+        {page === "contact" && <Contact navigate={navigate} />}
         {page === "product" && <ProductDetails productId={productId} navigate={navigate} />}
         {page === "admin" && <Admin navigate={navigate} />}
       </div>
