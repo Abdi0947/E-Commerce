@@ -1,50 +1,66 @@
-
-
 export default function ProductCard({ product, navigate, index = 0 }) {
   const available = product.availability === "available";
-  
-  // Calculate a staggered delay class up to 400ms
+  const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
+  const stars = "★".repeat(Math.max(1, Math.round(product.rating || 4)));
   const delayClass = `delay-${Math.min((index % 5 + 1) * 100, 400)}`;
 
   return (
     <div
-      className={`group bg-white border-[1.5px] border-slate-200/60 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 w-full flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(79,70,229,0.12)] hover:border-primary/30 hover:-translate-y-1.5 animate-slide-up ${delayClass}`}
+      className={`group bg-white border border-slate-200/80 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 w-full flex flex-col shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_24px_rgba(79,70,229,0.1)] hover:border-primary/30 hover:-translate-y-1 animate-slide-up ${delayClass}`}
       onClick={() => navigate("product", null, product.id)}
     >
-      {/* Image */}
-      <div className="relative h-[180px] bg-slate-50 overflow-hidden flex items-center justify-center p-3">
+      <div className="relative h-[176px] bg-slate-50 overflow-hidden flex items-center justify-center p-3">
         <img
           src={product.image}
           alt={product.name}
           className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.06]"
           loading="lazy"
         />
-        {/* Stock badge */}
-        <span
-          className={`absolute top-2.5 left-2.5 text-[11px] font-semibold px-2 py-0.5 rounded ${
-            available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-          }`}
-        >
-          {available ? "✓ In Stock" : "Out of Stock"}
-        </span>
-        {/* Featured badge */}
-        {product.featured && (
-          <span className="absolute top-2.5 right-2.5 text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700">
-            ⭐ Featured
+        {hasDiscount && (
+          <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-primary text-white">
+            -{product.discount}%
           </span>
         )}
+        <button
+          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full border border-slate-200 bg-white text-slate-400 text-[13px] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Add to wishlist"
+        >
+          ♡
+        </button>
       </div>
 
-      {/* Body */}
-      <div className="p-3 flex flex-col flex-1">
-
-
-        <p className="text-[15px] font-bold text-slate-900 mb-3">
-          {product.price.toLocaleString()}{" "}
-          <span className="text-[12px] font-semibold text-slate-500">ETB</span>
-        </p>
-
-
+      <div className="p-3.5 flex flex-col flex-1">
+        <h3 className="text-[13.5px] font-semibold text-slate-900 leading-snug line-clamp-2 min-h-[40px]">
+          {product.name}
+        </h3>
+        <div className="flex items-center gap-1 mt-1 mb-2">
+          <span className="text-[12px] text-amber-500 leading-none">{stars}</span>
+          <span className="text-[12px] text-slate-400">({product.reviewCount})</span>
+        </div>
+        <div className="mt-auto flex items-end justify-between gap-2">
+          <div>
+            <p className="text-[24px] leading-none font-bold text-primary">
+              Br {product.price.toLocaleString()}
+            </p>
+            {hasDiscount && (
+              <p className="text-[12px] text-slate-400 line-through mt-1">
+                Br {product.originalPrice.toLocaleString()}
+              </p>
+            )}
+          </div>
+          <button
+            className={`w-8 h-8 rounded-md border flex items-center justify-center text-sm ${
+              available
+                ? "border-primary/20 text-primary bg-primary/5 hover:bg-primary hover:text-white"
+                : "border-slate-200 text-slate-300 bg-slate-50"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Add to cart"
+          >
+            🛒
+          </button>
+        </div>
       </div>
     </div>
   );

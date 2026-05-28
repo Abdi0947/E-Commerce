@@ -19,9 +19,9 @@ function App() {
   };
 
   useEffect(() => {
-    if (scrollTarget === "products") {
+    if (scrollTarget === "products" || scrollTarget === "categories") {
       setTimeout(() => {
-        const el = document.getElementById("products");
+        const el = document.getElementById(scrollTarget);
         if (el) el.scrollIntoView({ behavior: "smooth" });
       }, 100);
       setScrollTarget(null);
@@ -40,15 +40,6 @@ function App() {
       </div>
 
       {page !== "admin" && <Footer />}
-
-      {/* Hidden admin trigger */}
-      <button
-        className="fixed bottom-4 right-4 w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-all z-50 cursor-pointer"
-        onClick={() => navigate("admin")}
-        title="Admin"
-      >
-        ⚙️
-      </button>
     </div>
   );
 }

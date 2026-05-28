@@ -1,18 +1,18 @@
 export default function FeatureStrip() {
   const features = [
-    { icon: "🚚", title: "Free Shipping",   subtitle: "On orders above Br 999" },
+    { icon: "🚚", title: "Free Shipping", subtitle: "On orders above Br 999" },
     { icon: "🛡️", title: "1 Year Warranty", subtitle: "On all products" },
-    { icon: "🏷️", title: "Best Price",      subtitle: "Guaranteed" },
-    { icon: "🎧", title: "24/7 Support",    subtitle: "We're here to help" },
+    { icon: "🏷️", title: "Best Price", subtitle: "Guaranteed" },
+    { icon: "🎧", title: "24/7 Support", subtitle: "We're here to help" },
   ];
 
   return (
-    <div className="bg-white border-t border-b border-slate-200" aria-label="Service highlights">
-      <div className="max-w-[1280px] mx-auto px-6 py-7 grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div className="bg-white border-t border-slate-200" aria-label="Service highlights">
+      <div className="max-w-[1280px] mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-4">
         {features.map((f, i) => (
-          <div key={i} className="flex items-center gap-3.5">
+          <div key={i} className="flex items-center gap-3.5 rounded-xl border border-slate-200 p-4">
             <div
-              className="w-12 h-12 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-[22px] shrink-0"
+              className="w-11 h-11 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-[20px] shrink-0"
               aria-hidden="true"
             >
               {f.icon}

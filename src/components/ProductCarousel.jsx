@@ -5,7 +5,7 @@ export default function ProductCarousel({ title, products, navigate }) {
   const trackRef = useRef(null);
   const [offset, setOffset] = useState(0);
 
-  const CARD_W = 210 + 16; // card width + gap
+  const CARD_W = 220 + 16;
   const visibleCount = 5;
   const maxOffset = Math.max(0, products.length - visibleCount);
 
@@ -16,15 +16,15 @@ export default function ProductCarousel({ title, products, navigate }) {
   const sectionId  = `section-title-${title.replace(/\s+/g, "-").toLowerCase()}`;
 
   return (
-    <section className="py-10 bg-white" aria-labelledby={sectionId}>
+    <section className="py-9 bg-white" aria-labelledby={sectionId}>
 
       {/* Header */}
-      <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between mb-5">
-        <h2 id={sectionId} className="text-[22px] font-bold text-slate-900 tracking-tight">
+      <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between mb-4">
+        <h2 id={sectionId} className="text-[30px] font-bold text-slate-900 tracking-tight">
           {title}
         </h2>
         <button
-          className="flex items-center gap-1 text-sm font-semibold text-primary bg-transparent border-none cursor-pointer transition-all hover:text-primary-dark hover:gap-2"
+          className="flex items-center gap-1 text-[14px] font-semibold text-primary bg-transparent border-none cursor-pointer transition-all hover:text-primary-dark hover:gap-2"
           onClick={() => navigate("home", "products")}
         >
           View all
@@ -40,7 +40,7 @@ export default function ProductCarousel({ title, products, navigate }) {
 
         {/* Left arrow */}
         <button
-          className="absolute top-1/2 -translate-y-1/2 -left-1 z-[5] w-9 h-9 rounded-full border-[1.5px] border-slate-200 bg-white shadow-md text-slate-900 flex items-center justify-center text-base cursor-pointer transition-all hover:bg-primary hover:text-white hover:border-primary disabled:opacity-35 disabled:cursor-not-allowed"
+          className="absolute top-1/2 -translate-y-1/2 -left-1 z-[5] w-9 h-9 rounded-full border border-slate-200 bg-white shadow-sm text-slate-900 flex items-center justify-center text-base cursor-pointer transition-all hover:bg-primary hover:text-white hover:border-primary disabled:opacity-35 disabled:cursor-not-allowed"
           onClick={scrollLeft}
           disabled={offset === 0}
           aria-label="Scroll left"
@@ -57,7 +57,7 @@ export default function ProductCarousel({ title, products, navigate }) {
             aria-live="polite"
           >
             {products.map((product) => (
-              <div key={product.id} className="shrink-0 w-[210px]">
+              <div key={product.id} className="shrink-0 w-[220px]">
                 <ProductCard product={product} navigate={navigate} />
               </div>
             ))}
@@ -66,7 +66,7 @@ export default function ProductCarousel({ title, products, navigate }) {
 
         {/* Right arrow */}
         <button
-          className="absolute top-1/2 -translate-y-1/2 -right-1 z-[5] w-9 h-9 rounded-full border-[1.5px] border-slate-200 bg-white shadow-md text-slate-900 flex items-center justify-center text-base cursor-pointer transition-all hover:bg-primary hover:text-white hover:border-primary disabled:opacity-35 disabled:cursor-not-allowed"
+          className="absolute top-1/2 -translate-y-1/2 -right-1 z-[5] w-9 h-9 rounded-full border border-slate-200 bg-white shadow-sm text-slate-900 flex items-center justify-center text-base cursor-pointer transition-all hover:bg-primary hover:text-white hover:border-primary disabled:opacity-35 disabled:cursor-not-allowed"
           onClick={scrollRight}
           disabled={offset >= maxOffset}
           aria-label="Scroll right"
