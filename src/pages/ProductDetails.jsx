@@ -45,27 +45,47 @@ export default function ProductDetails({ productId, navigate }) {
       {/* Detail card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white border-[1.5px] border-slate-200 rounded-2xl p-8 shadow-md">
 
-        {/* Image */}
-        <div className="relative bg-slate-50 rounded-xl flex items-center justify-center p-6 min-h-[320px]">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="max-h-[280px] object-contain"
-          />
-          <span
-            className={`absolute top-3 left-3 text-[11px] font-semibold px-3 py-1 rounded-full ${
-              available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-            }`}
-          >
-            {available ? "✓ In Stock" : "Out of Stock"}
-          </span>
+        {/* Left Column: Images & Description */}
+        <div className="flex flex-col gap-6">
+          {/* Main Image */}
+          <div className="relative bg-slate-50 rounded-xl flex items-center justify-center p-6 min-h-[320px]">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="max-h-[280px] object-contain"
+            />
+            <span
+              className={`absolute top-3 left-3 text-[11px] font-semibold px-3 py-1 rounded-full ${
+                available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+              }`}
+            >
+              {available ? "✓ In Stock" : "Out of Stock"}
+            </span>
+          </div>
+
+          {/* Thumbnails */}
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            <div className="w-20 h-20 shrink-0 bg-slate-50 rounded-lg border-2 border-primary flex items-center justify-center p-2 cursor-pointer">
+              <img src={product.image} alt={`${product.name} front`} className="w-full h-full object-contain" />
+            </div>
+            <div className="w-20 h-20 shrink-0 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center p-2 cursor-pointer hover:border-primary transition-colors">
+              <img src={product.image} alt={`${product.name} side`} className="w-full h-full object-contain scale-x-[-1]" />
+            </div>
+            <div className="w-20 h-20 shrink-0 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center p-2 cursor-pointer hover:border-primary transition-colors">
+              <img src={product.image} alt={`${product.name} back`} className="w-full h-full object-contain scale-[1.2]" />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Product Description</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">{product.description}</p>
+          </div>
         </div>
 
         {/* Info */}
         <div className="flex flex-col">
-          <p className="text-[12px] font-semibold text-primary uppercase tracking-[0.8px] mb-2">
-            {product.category}
-          </p>
+
           <h1 className="text-[26px] font-extrabold text-slate-900 mb-4 tracking-tight">
             {product.name}
           </h1>
@@ -73,7 +93,7 @@ export default function ProductDetails({ productId, navigate }) {
             {product.price.toLocaleString()}{" "}
             <span className="text-base text-slate-400">ETB</span>
           </p>
-          <p className="text-sm text-slate-500 leading-relaxed mb-6">{product.description}</p>
+
 
           <hr className="border-slate-200 mb-6" />
 

@@ -10,11 +10,15 @@ export default function Footer() {
         {/* Brand */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-extrabold text-base">
-              ⚡
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
             </div>
             <span className="text-lg font-extrabold text-white">
-              Aero<span className="text-primary-light">Shop</span>
+              NINA <span className="text-primary-light">Mart</span>
             </span>
           </div>
           <p className="text-[13.5px] text-slate-400 leading-relaxed max-w-[240px]">
@@ -55,7 +59,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-center text-[13px] text-slate-500">
-          © 2025 AeroShop — All rights reserved.
+          © 2025 NINA Mart — All rights reserved.
         </div>
       </div>
     </footer>
