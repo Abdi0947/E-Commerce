@@ -51,9 +51,9 @@ export default function Hero({ navigate }) {
   const next = () => setActive((a) => (a + 1) % slides.length);
 
   return (
-    <section className="bg-[#f8fafc] py-4" aria-label="Featured promotions">
-      <div className="relative max-w-[1280px] mx-auto px-6">
-        <div className="relative overflow-hidden rounded-[14px] h-[350px] select-none border border-slate-200/60">
+    <section className="bg-[#f8fafc] py-3 sm:py-4" aria-label="Featured promotions">
+      <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6">
+        <div className="relative overflow-hidden rounded-[14px] h-[300px] sm:h-[350px] select-none border border-slate-200/60">
       {slides.map((slide, i) => (
         <div
           key={i}
@@ -69,21 +69,21 @@ export default function Hero({ navigate }) {
           />
 
           {/* Slide content */}
-          <div className="w-full h-full px-12 md:px-16 flex items-center justify-between relative z-[2]">
+          <div className="w-full h-full px-6 sm:px-10 md:px-16 flex items-center justify-between relative z-[2]">
             <div className={`max-w-[480px] ${active === i ? "animate-slide-up" : "opacity-0"}`}>
               <span className="inline-block bg-primary text-white text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-[18px]">
                 {slide.badge}
               </span>
-              <h1 className="text-[48px] font-extrabold text-white leading-[1.05] tracking-[-1.5px] mb-4">
+              <h1 className="text-[32px] sm:text-[40px] lg:text-[48px] font-extrabold text-white leading-[1.05] tracking-[-1.2px] sm:tracking-[-1.5px] mb-3 sm:mb-4">
                 {slide.title}
                 <br />
                 <span className="text-primary-light">{slide.accent}</span>
               </h1>
-              <p className="text-[18px] text-slate-300 leading-relaxed mb-7 max-w-[380px]">
+              <p className="text-[14px] sm:text-[16px] lg:text-[18px] text-slate-300 leading-relaxed mb-5 sm:mb-7 max-w-[380px]">
                 {slide.subtitle}
               </p>
               <button
-                className="inline-flex items-center gap-2 bg-primary text-white px-7 py-[12px] rounded-[10px] text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(79,70,229,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(79,70,229,0.5)]"
+                className="inline-flex items-center gap-2 bg-primary text-white px-5 sm:px-7 py-[10px] sm:py-[12px] rounded-[10px] text-[14px] sm:text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(79,70,229,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(79,70,229,0.5)]"
                 onClick={() => navigate("home", "products")}
                 id={`hero-cta-${i}`}
               >
@@ -95,7 +95,7 @@ export default function Hero({ navigate }) {
               </button>
             </div>
 
-            <div className={`shrink-0 w-[470px] h-[320px] items-center justify-center hidden lg:flex ${active === i ? "animate-fade-in delay-200" : "opacity-0"}`}>
+            <div className={`shrink-0 w-[300px] lg:w-[470px] h-[220px] lg:h-[320px] items-center justify-center hidden md:flex ${active === i ? "animate-fade-in delay-200" : "opacity-0"}`}>
               <img
                 src={slide.image}
                 alt={`${slide.title} ${slide.accent}`}
@@ -109,14 +109,14 @@ export default function Hero({ navigate }) {
 
       {/* Arrow buttons */}
       <button
-        className="absolute top-1/2 -translate-y-1/2 left-4 z-10 w-9 h-9 rounded-full border-[1.5px] border-white/20 bg-white/[0.08] backdrop-blur-sm text-white flex items-center justify-center text-[18px] cursor-pointer transition-all hover:bg-white/[0.18] hover:border-white/40"
+        className="absolute top-1/2 -translate-y-1/2 left-2 sm:left-4 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full border-[1.5px] border-white/20 bg-white/[0.08] backdrop-blur-sm text-white flex items-center justify-center text-[18px] cursor-pointer transition-all hover:bg-white/[0.18] hover:border-white/40"
         onClick={prev}
         aria-label="Previous slide"
       >
         ‹
       </button>
       <button
-        className="absolute top-1/2 -translate-y-1/2 right-4 z-10 w-9 h-9 rounded-full border-[1.5px] border-white/20 bg-white/[0.08] backdrop-blur-sm text-white flex items-center justify-center text-[18px] cursor-pointer transition-all hover:bg-white/[0.18] hover:border-white/40"
+        className="absolute top-1/2 -translate-y-1/2 right-2 sm:right-4 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full border-[1.5px] border-white/20 bg-white/[0.08] backdrop-blur-sm text-white flex items-center justify-center text-[18px] cursor-pointer transition-all hover:bg-white/[0.18] hover:border-white/40"
         onClick={next}
         aria-label="Next slide"
       >

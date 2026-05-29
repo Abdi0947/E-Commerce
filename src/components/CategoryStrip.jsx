@@ -1,13 +1,13 @@
 const CATEGORY_ITEMS = [
-  { key: "all",          label: "All Categories", icon: "⊞" },
-  { key: "smartphones",  label: "Smartphones",    icon: "📱" },
-  { key: "laptops",      label: "Laptops",         icon: "💻" },
-  { key: "headphones",   label: "Headphones",      icon: "🎧" },
-  { key: "smartwatches", label: "Smartwatches",    icon: "⌚" },
-  { key: "cameras",      label: "Cameras",          icon: "📷" },
-  { key: "speakers",     label: "Speakers",         icon: "🔊" },
-  { key: "accessories",  label: "Accessories",      icon: "🔌" },
-  { key: "more",         label: "More",             icon: "•••" },
+  { key: "all", label: "All Categories", icon: "apps" },
+  { key: "smartphones", label: "Smartphones", icon: "smartphone" },
+  { key: "laptops", label: "Laptops", icon: "laptop_mac" },
+  { key: "headphones", label: "Headphones", icon: "headphones" },
+  { key: "smartwatches", label: "Smartwatches", icon: "watch" },
+  { key: "cameras", label: "Cameras", icon: "photo_camera" },
+  { key: "speakers", label: "Speakers", icon: "speaker" },
+  { key: "accessories", label: "Accessories", icon: "cable" },
+  { key: "more", label: "More", icon: "more_horiz" },
 ];
 
 export default function CategoryStrip({ activeCategory, onSelect }) {
@@ -29,7 +29,9 @@ export default function CategoryStrip({ activeCategory, onSelect }) {
                 className={`w-[42px] h-[42px] rounded-xl flex items-center justify-center text-[20px] transition-all border-[1.5px]
                   ${isActive ? "bg-blue-50 border-primary" : "bg-slate-50 border-slate-200"}`}
               >
-                {cat.icon}
+                <span className="material-symbols-outlined text-[22px] leading-none">
+                  {cat.icon}
+                </span>
               </span>
               <span className={`text-[12px] font-medium whitespace-nowrap ${isActive ? "text-primary" : "text-slate-500"}`}>
                 {cat.label}

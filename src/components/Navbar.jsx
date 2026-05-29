@@ -1,86 +1,123 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function Navbar({ page, navigate }) {
+export default function Navbar({ page, navigate, onSearch }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCat, setSearchCat] = useState("All Categories");
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  const navLinks = ["Home", "New Arrivals", "Best Sellers", "Categories", "Deals", "Brands", "Blog", "Contact", "Admin"];
+  const navLinks = ["Home","Popular", "Best Sellers", "Contact"];
 
   const categories = [
     "All Categories", "Smartphones", "Laptops", "Headphones",
     "Smartwatches", "Cameras", "Speakers", "Accessories",
   ];
 
+  const normalizeCategory = (label) =>
+    label.toLowerCase() === "all categories" ? "all" : label.toLowerCase();
+
+  const triggerSearch = () => {
+    if (typeof onSearch === "function") {
+      onSearch(searchQuery.trim(), normalizeCategory(searchCat));
+      return;
+    }
+    navigate("home", "categories");
+  };
+
+  const handleCategoryChange = (value) => {
+    setSearchCat(value);
+    const normalized = normalizeCategory(value);
+    if (typeof onSearch === "function") {
+      onSearch(searchQuery.trim(), normalized);
+    }
+  };
+
+  useEffect(() => {
+    const onScroll = () => {
+      setIsScrolled(window.scrollY > 24);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <nav className="sticky top-0 z-[1000] bg-navy text-white animate-fade-in shadow-[0_4px_20px_rgba(2,6,23,0.25)]">
+    <nav
+      className={`sticky top-0 z-[1000] text-white animate-fade-in transition-all duration-300 ${
+        isScrolled
+          ? "bg-[#0b1530]/95 backdrop-blur-md shadow-[0_10px_30px_rgba(2,6,23,0.35)]"
+          : "bg-navy shadow-[0_4px_20px_rgba(2,6,23,0.25)]"
+      }`}
+    >
       <div className="border-b border-white/10">
-        <div className="max-w-[1280px] mx-auto px-6 h-[62px] flex items-center gap-4">
+        <div
+          className={`max-w-[1280px] mx-auto px-4 sm:px-6 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 transition-all duration-300 ${
+            isScrolled ? "py-2 sm:h-[56px] sm:py-0" : "py-3 sm:h-[62px] sm:py-0"
+          }`}
+        >
           <button
-            className="flex items-center gap-2 shrink-0 cursor-pointer bg-transparent border-none p-0"
+            className="flex items-center gap-2 shrink-0 cursor-pointer bg-transparent border-none  p-0"
             onClick={() => navigate("home")}
             aria-label="ElectroHub home"
           >
-            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary-light to-primary flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M3 12h18"></path>
-                <path d="M12 3v18"></path>
-              </svg>
-            </div>
-            <span className="text-[23px] leading-none font-bold tracking-tight">
-              ElectroHub
-            </span>
+            <img
+              src="/ninamart-logo.svg"
+              alt="NinaMart"
+              className="h-9 sm:h-10 w-auto rounded object-contain"
+            />
           </button>
 
-          <div className="flex-1 flex items-center max-w-[560px] h-10 bg-white rounded-[8px] overflow-hidden border border-white/10 mx-auto">
+          <div
+            className={`w-full sm:flex-1 flex items-center max-w-none sm:max-w-[560px] h-10 rounded-[8px] overflow-hidden border sm:mx-auto backdrop-blur-sm transition-all duration-300 ${
+              isScrolled ? "bg-white/12 border-white/30" : "bg-white/10 border-white/20"
+            }`}
+          >
             <select
-              className="h-10 px-3 bg-slate-100 border-none border-r border-r-slate-200 text-slate-700 text-[12.5px] cursor-pointer outline-none"
+              className="h-10 w-[130px] sm:w-auto px-2.5 sm:px-3 bg-white/10 border-none border-r border-r-white/20 text-white text-[12px] sm:text-[12.5px] cursor-pointer outline-none"
               value={searchCat}
-              onChange={(e) => setSearchCat(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               aria-label="Search category"
             >
-              {categories.map((c) => <option key={c}>{c}</option>)}
+              {categories.map((c) => (
+                <option key={c} className="text-slate-900">
+                  {c}
+                </option>
+              ))}
             </select>
             <input
-              className="flex-1 h-10 px-3.5 border-none outline-none text-sm text-slate-900 bg-white placeholder:text-slate-400"
+              className="flex-1 h-10 min-w-0 px-3 border-none outline-none text-sm text-white bg-transparent placeholder:text-slate-300"
               type="text"
               placeholder="Search for products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && navigate("home", "categories")}
+              onKeyDown={(e) => e.key === "Enter" && triggerSearch()}
               aria-label="Search products"
             />
             <button
               className="w-[42px] h-10 bg-primary text-white flex items-center justify-center shrink-0 text-[15px] transition-all hover:bg-primary-dark"
-              onClick={() => navigate("home", "categories")}
+              onClick={triggerSearch}
               aria-label="Search"
             >
-              🔍
+              <span className="material-symbols-outlined text-[18px] leading-none">
+                search
+              </span>
             </button>
-          </div>
-          <div className="hidden lg:flex items-center gap-4 text-[13.5px]">
-            <button className="text-white/90 hover:text-white">♡ Wishlist</button>
-            <button className="text-white/90 hover:text-white">🛒 Cart <span className="ml-1 text-[11px] bg-primary rounded-full px-1.5 py-0.5">3</span></button>
-            <button onClick={() => navigate("admin")} className="px-3 py-1.5 rounded-[7px] border border-primary/50 text-primary-light hover:bg-primary/15">Admin</button>
-            <button className="px-4 py-1.5 rounded-[7px] border border-white/20 hover:bg-white/10">Login</button>
-            <button className="px-4 py-1.5 rounded-[7px] bg-primary hover:bg-primary-dark">Sign Up</button>
           </div>
         </div>
       </div>
 
-      <div className="border-b border-white/10 bg-[#08132a] hidden md:block">
-        <div className="max-w-[1280px] mx-auto px-6 h-10 flex items-center gap-6">
+      <div className="border-b border-white/10 bg-[#08132a]">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-10 flex items-center gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {navLinks.map((label) => (
             <button
               key={label}
-              className={`h-10 text-[12.5px] font-medium border-b-2 ${
-                (page === "home" && label === "Home") || (page === "admin" && label === "Admin")
+              className={`h-10 shrink-0 text-[12.5px] font-medium border-b-2 ${
+                page === "home" && label === "Home"
                   ? "text-primary-light border-primary-light"
                   : "text-white/80 border-transparent hover:text-white"
               }`}
               onClick={() => {
                 if (label === "Contact") navigate("contact");
                 else if (label === "Categories") navigate("home", "categories");
-                else if (label === "Admin") navigate("admin");
                 else navigate("home");
               }}
             >

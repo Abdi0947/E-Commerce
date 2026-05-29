@@ -3,13 +3,14 @@ import { PHONE, TELEGRAM } from "../data/products";
 export default function Footer() {
   return (
     <footer className="bg-navy text-slate-300 mt-auto">
-      <div className="max-w-[1280px] mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-5 gap-10">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-10 sm:py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary-light to-primary" />
-            <span className="text-[22px] font-bold text-white">
-              ElectroHub
-            </span>
+            <img
+              src="/ninamart-logo.svg"
+              alt="NinaMart"
+              className="h-10 w-auto rounded object-contain"
+            />
           </div>
           <p className="text-[13.5px] text-slate-400 leading-relaxed max-w-[240px]">
             Your one-stop destination for the latest electronics with the best prices and quality.
@@ -63,7 +64,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-center text-[13px] text-slate-500">
-          © 2026 ElectroHub. All rights reserved.
+          © 2026 NinaMart. All rights reserved.
         </div>
       </div>
     </footer>

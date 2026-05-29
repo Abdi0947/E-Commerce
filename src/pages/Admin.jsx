@@ -8,6 +8,7 @@ const emptyForm = {
   price: "",
   originalPrice: "",
   image: "",
+  galleryImages: [""],
   availability: "available",
   description: "",
   featured: false,
@@ -58,6 +59,11 @@ export default function Admin({ navigate }) {
     const originalPrice = parsePrice(source.originalPrice) || price;
     const discount =
       originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+    const homeImage = source.image.trim();
+    const extraImages = (source.galleryImages || []).map((img) => img.trim()).filter(Boolean);
+    const dedupExtras = Array.from(new Set(extraImages)).filter((img) => img !== homeImage);
+    const allImages = [homeImage, ...dedupExtras];
+    const detailImage = dedupExtras[0] || homeImage;
     return {
       id,
       name: source.name.trim(),
@@ -67,9 +73,9 @@ export default function Admin({ navigate }) {
       discount,
       rating: 4.7,
       reviewCount: 0,
-      image:
-        source.image.trim() ||
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop",
+      image: homeImage,
+      detailImage,
+      gallery: allImages,
       availability: source.availability,
       description: source.description.trim(),
       featured: !!source.featured,
@@ -93,10 +99,36 @@ export default function Admin({ navigate }) {
     setFormError("");
   };
 
+  const handleGalleryImageChange = (index, value) => {
+    setForm((prev) => {
+      const next = [...prev.galleryImages];
+      next[index] = value;
+      return { ...prev, galleryImages: next };
+    });
+    setFormError("");
+  };
+
+  const addGalleryImageField = () => {
+    setForm((prev) => ({ ...prev, galleryImages: [...prev.galleryImages, ""] }));
+  };
+
+  const removeGalleryImageField = (index) => {
+    setForm((prev) => {
+      const next = prev.galleryImages.filter((_, idx) => idx !== index);
+      return { ...prev, galleryImages: next.length > 0 ? next : [""] };
+    });
+    setFormError("");
+  };
+
   const validateForm = () => {
     if (!form.name.trim()) return "Product name is required.";
     if (!form.description.trim()) return "Description is required.";
+    if (!form.image.trim()) return "Home image URL is required.";
     if (!form.price || isNaN(form.price) || Number(form.price) <= 0) return "Enter a valid price.";
+    const homeImage = form.image.trim();
+    const extras = (form.galleryImages || []).map((img) => img.trim()).filter((img) => img && img !== homeImage);
+    const all = Array.from(new Set([homeImage, ...extras]));
+    if (all.length < 2) return "Please provide at least 2 product images.";
     if (form.originalPrice && (isNaN(form.originalPrice) || Number(form.originalPrice) <= 0)) {
       return "Original price must be a valid number.";
     }
@@ -144,6 +176,13 @@ export default function Admin({ navigate }) {
       price: String(product.price || ""),
       originalPrice: String(product.originalPrice || product.price || ""),
       image: product.image || "",
+      galleryImages: (() => {
+        const fromGallery = Array.isArray(product.gallery) ? product.gallery : [];
+        const extras = fromGallery.filter((img) => img && img !== product.image);
+        const fallback = [product.detailImage || ""].filter(Boolean);
+        const initial = extras.length > 0 ? extras : fallback;
+        return initial.length > 0 ? initial : [""];
+      })(),
       availability: product.availability || "available",
       description: product.description || "",
       featured: !!product.featured,
@@ -254,13 +293,13 @@ export default function Admin({ navigate }) {
   return (
     <main className="min-h-[88vh] bg-[#f1f5f9]">
       <div className="bg-gradient-to-r from-[#020617] via-[#0f172a] to-[#1e1b4b] text-white">
-        <div className="max-w-[1280px] mx-auto px-6 py-7 flex items-center justify-between gap-4 flex-wrap">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-7 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-primary-light text-xs uppercase tracking-[0.2em] font-semibold">Admin Panel</p>
             <h1 className="text-3xl font-bold mt-1">ElectroHub Dashboard</h1>
             <p className="text-slate-300 text-sm mt-1">Manage catalogue, pricing, and visibility in one place.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button type="button" onClick={handleExport} className="px-4 py-2 rounded-lg border border-white/20 bg-white/10 hover:bg-white/15 text-sm font-semibold">
               Export JSON
             </button>
@@ -274,7 +313,7 @@ export default function Admin({ navigate }) {
         </div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6 space-y-6">
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total Products" value={stats.total} tone="indigo" />
           <StatCard label="In Stock" value={stats.inStock} tone="green" />
@@ -291,7 +330,7 @@ export default function Admin({ navigate }) {
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Product Name</label>
                 <input className={inputCls} value={form.name} onChange={(e) => handleChange("name", e.target.value)} placeholder="e.g. ASUS ROG Zephyrus G14" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</label>
                   <select className={selectCls} value={form.category} onChange={(e) => handleChange("category", e.target.value)}>
@@ -308,7 +347,7 @@ export default function Admin({ navigate }) {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Price (Br)</label>
                   <input className={inputCls} type="number" min="1" value={form.price} onChange={(e) => handleChange("price", e.target.value)} placeholder="149900" />
@@ -318,15 +357,55 @@ export default function Admin({ navigate }) {
                   <input className={inputCls} type="number" min="1" value={form.originalPrice} onChange={(e) => handleChange("originalPrice", e.target.value)} placeholder="179900" />
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Home Image URL</label>
+                  <input
+                    className={inputCls}
+                    value={form.image}
+                    onChange={(e) => handleChange("image", e.target.value)}
+                    placeholder="Used in home/product cards"
+                  />
+                </div>
+              </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Image URL</label>
-                <input className={inputCls} value={form.image} onChange={(e) => handleChange("image", e.target.value)} placeholder="https://..." />
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Product Gallery Images
+                </label>
+                <div className="space-y-2 mt-1">
+                  {form.galleryImages.map((img, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className={inputCls}
+                        value={img}
+                        onChange={(e) => handleGalleryImageChange(idx, e.target.value)}
+                        placeholder={`Gallery image URL ${idx + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImageField(idx)}
+                        className="px-3 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                        aria-label={`Remove gallery image ${idx + 1}`}
+                      >
+                        -
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addGalleryImageField}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-primary/30 text-primary text-sm font-semibold hover:bg-primary/5"
+                  >
+                    <span className="material-symbols-outlined text-base leading-none">add</span>
+                    Add Image
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Description</label>
                 <textarea className={`${inputCls} resize-none`} rows={4} value={form.description} onChange={(e) => handleChange("description", e.target.value)} placeholder="Write short product details..." />
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <ToggleChip active={form.featured} label="Featured" onClick={() => handleChange("featured", !form.featured)} />
                 <ToggleChip active={form.popular} label="Popular" onClick={() => handleChange("popular", !form.popular)} />
                 <ToggleChip active={form.bestSeller} label="Best Seller" onClick={() => handleChange("bestSeller", !form.bestSeller)} />

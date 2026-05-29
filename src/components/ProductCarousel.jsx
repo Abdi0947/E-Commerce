@@ -14,13 +14,14 @@ export default function ProductCarousel({ title, products, navigate }) {
 
   const translateX = -(offset * CARD_W);
   const sectionId  = `section-title-${title.replace(/\s+/g, "-").toLowerCase()}`;
+  const showArrows = products.length > visibleCount;
 
   return (
     <section className="py-9 bg-white" aria-labelledby={sectionId}>
 
       {/* Header */}
-      <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between mb-4">
-        <h2 id={sectionId} className="text-[30px] font-bold text-slate-900 tracking-tight">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 flex items-center justify-between mb-4">
+        <h2 id={sectionId} className="text-[24px] sm:text-[30px] font-bold text-slate-900 tracking-tight">
           {title}
         </h2>
         <button
@@ -36,7 +37,7 @@ export default function ProductCarousel({ title, products, navigate }) {
       </div>
 
       {/* Carousel */}
-      <div className="relative max-w-[1280px] mx-auto px-6">
+      <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6">
 
         {/* Left arrow */}
         <button
@@ -44,12 +45,13 @@ export default function ProductCarousel({ title, products, navigate }) {
           onClick={scrollLeft}
           disabled={offset === 0}
           aria-label="Scroll left"
+          style={{ display: showArrows ? "flex" : "none" }}
         >
           ‹
         </button>
 
         {/* Track */}
-        <div className="overflow-hidden">
+        <div className="overflow-x-auto sm:overflow-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div
             ref={trackRef}
             className="flex gap-4 transition-transform duration-[400ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
@@ -57,7 +59,7 @@ export default function ProductCarousel({ title, products, navigate }) {
             aria-live="polite"
           >
             {products.map((product) => (
-              <div key={product.id} className="shrink-0 w-[220px]">
+              <div key={product.id} className="shrink-0 w-[200px] sm:w-[220px]">
                 <ProductCard product={product} navigate={navigate} />
               </div>
             ))}
@@ -70,6 +72,7 @@ export default function ProductCarousel({ title, products, navigate }) {
           onClick={scrollRight}
           disabled={offset >= maxOffset}
           aria-label="Scroll right"
+          style={{ display: showArrows ? "flex" : "none" }}
         >
           ›
         </button>
