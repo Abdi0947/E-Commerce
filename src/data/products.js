@@ -127,7 +127,7 @@ const products = [
     discount: 0,
     rating: 4.8,
     reviewCount: 153,
-    image: "https://images.unsplash.com/photo-1585790409439-5baec4271de5?w=600&auto=format&fit=crop&q=80",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSD-MhJ0eofcWiyL35mcNl7_skZvmyV7zm05Q&s",
     availability: "available",
     description:
       "iPad Air 5th generation with M1 chip, 10.9-inch Liquid Retina display, USB-C, 5G capability, Center Stage, and compatibility with Apple Pencil 2.",
@@ -183,6 +183,8 @@ export const categories = [
 ];
 
 export const PHONE = "+251947526347";
+export const FACEBOOK = "https://www.facebook.com/";
+export const INSTAGRAM = "https://www.instagram.com/";
 export const TELEGRAM = "https://t.me/ElectroHub_Support";
 
 export default products;

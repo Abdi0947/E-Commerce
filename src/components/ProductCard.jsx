@@ -35,7 +35,7 @@ export default function ProductCard({ product, navigate, index = 0 }) {
           {product.name}
         </h3>
         <div className="mt-2 mb-2 flex items-center gap-2">
-          <p className="text-[24px] leading-none font-bold text-black">
+          <p className="text-[18px] leading-none font-bold text-black">
               Br {product.price.toLocaleString()}
             </p>
             {hasDiscount && (

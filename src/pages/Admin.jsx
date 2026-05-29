@@ -1,12 +1,20 @@
 import { useMemo, useState, useEffect } from "react";
 import defaultProducts, { categories } from "../data/products";
+import {
+  getAnalyticsSummary,
+  getProductViewsSorted,
+  resetAnalytics,
+} from "../utils/analytics";
 
+const ADMIN_EMAIL = "admin@ninamart.com";
 const ADMIN_PASSWORD = "aero2025";
+const PRODUCT_VIEWS_PAGE_SIZE = 5;
 const emptyForm = {
   name: "",
   category: "smartphones",
   price: "",
   originalPrice: "",
+  rating: "4.5",
   image: "",
   galleryImages: [""],
   availability: "available",
@@ -23,8 +31,9 @@ const selectCls =
 
 export default function Admin({ navigate }) {
   const [authed, setAuthed] = useState(false);
+  const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
-  const [pwError, setPwError] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
@@ -54,11 +63,16 @@ export default function Admin({ navigate }) {
 
   const parsePrice = (value) => Number(value || 0);
 
-  const normalizeProduct = (source, id = Date.now()) => {
+  const normalizeProduct = (source, id = Date.now(), existing = null) => {
     const price = parsePrice(source.price);
     const originalPrice = parsePrice(source.originalPrice) || price;
     const discount =
       originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+    const parsedRating = Number(source.rating);
+    const rating = Math.min(
+      5,
+      Math.max(0, Number.isFinite(parsedRating) ? parsedRating : 4.5),
+    );
     const homeImage = source.image.trim();
     const extraImages = (source.galleryImages || []).map((img) => img.trim()).filter(Boolean);
     const dedupExtras = Array.from(new Set(extraImages)).filter((img) => img !== homeImage);
@@ -71,8 +85,8 @@ export default function Admin({ navigate }) {
       price,
       originalPrice,
       discount,
-      rating: 4.7,
-      reviewCount: 0,
+      rating: Math.round(rating * 10) / 10,
+      reviewCount: existing?.reviewCount ?? 0,
       image: homeImage,
       detailImage,
       gallery: allImages,
@@ -86,12 +100,13 @@ export default function Admin({ navigate }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (pw === ADMIN_PASSWORD) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === ADMIN_EMAIL && pw === ADMIN_PASSWORD) {
       setAuthed(true);
-      setPwError("");
+      setLoginError("");
       return;
     }
-    setPwError("Incorrect password. Please try again.");
+    setLoginError("Invalid email or password. Please try again.");
   };
 
   const handleChange = (field, value) => {
@@ -132,6 +147,10 @@ export default function Admin({ navigate }) {
     if (form.originalPrice && (isNaN(form.originalPrice) || Number(form.originalPrice) <= 0)) {
       return "Original price must be a valid number.";
     }
+    const rating = Number(form.rating);
+    if (form.rating === "" || isNaN(rating) || rating < 0 || rating > 5) {
+      return "Rating must be a number between 0 and 5.";
+    }
     return "";
   };
 
@@ -151,7 +170,7 @@ export default function Admin({ navigate }) {
 
     if (editingId) {
       const updated = products.map((p) =>
-        String(p.id) === String(editingId) ? normalizeProduct(form, p.id) : p,
+        String(p.id) === String(editingId) ? normalizeProduct(form, p.id, p) : p,
       );
       saveProducts(updated);
       showSuccess("Product updated successfully.");
@@ -175,6 +194,7 @@ export default function Admin({ navigate }) {
       category: product.category || "smartphones",
       price: String(product.price || ""),
       originalPrice: String(product.originalPrice || product.price || ""),
+      rating: String(product.rating ?? "4.5"),
       image: product.image || "",
       galleryImages: (() => {
         const fromGallery = Array.isArray(product.gallery) ? product.gallery : [];
@@ -239,6 +259,50 @@ export default function Admin({ navigate }) {
     return { total, inStock, featured, totalValue };
   }, [products]);
 
+  const [analyticsVersion, setAnalyticsVersion] = useState(0);
+  const [productViewsPage, setProductViewsPage] = useState(1);
+
+  const analytics = useMemo(
+    () => getAnalyticsSummary(),
+    [products, authed, analyticsVersion]
+  );
+  const productViewRows = useMemo(
+    () => getProductViewsSorted(products),
+    [products, authed, analyticsVersion]
+  );
+
+  const productViewsTotalPages = Math.max(
+    1,
+    Math.ceil(productViewRows.length / PRODUCT_VIEWS_PAGE_SIZE)
+  );
+  const paginatedProductViewRows = useMemo(() => {
+    const start = (productViewsPage - 1) * PRODUCT_VIEWS_PAGE_SIZE;
+    return productViewRows.slice(start, start + PRODUCT_VIEWS_PAGE_SIZE);
+  }, [productViewRows, productViewsPage]);
+
+  useEffect(() => {
+    if (productViewsPage > productViewsTotalPages) {
+      setProductViewsPage(productViewsTotalPages);
+    }
+  }, [productViewsPage, productViewsTotalPages]);
+
+  useEffect(() => {
+    if (!authed) return;
+    const onStorage = (e) => {
+      if (e.key === "aero_analytics") setAnalyticsVersion((v) => v + 1);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [authed]);
+
+  const handleResetAnalytics = () => {
+    if (!window.confirm("Reset all visit and product view statistics?")) return;
+    resetAnalytics();
+    setAnalyticsVersion((v) => v + 1);
+    setProductViewsPage(1);
+    showSuccess("Analytics data cleared.");
+  };
+
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
     const filtered = products.filter((p) => {
@@ -268,16 +332,45 @@ export default function Admin({ navigate }) {
           <p className="text-primary-light text-sm font-semibold tracking-wide uppercase mb-2">ElectroHub</p>
           <h2 className="text-3xl font-bold text-white mb-2">Admin Console</h2>
           <p className="text-sm text-slate-300 mb-6">Sign in to manage products, pricing and storefront highlights.</p>
-          <form onSubmit={handleLogin} className="flex flex-col gap-3">
-            <input
-              type="password"
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary"
-              placeholder="Enter admin password"
-              autoFocus
-            />
-            {pwError && <p className="text-red-300 text-sm">{pwError}</p>}
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="admin-email" className="block text-xs font-semibold text-slate-300 uppercase tracking-wide mb-1.5">
+                Email
+              </label>
+              <input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setLoginError("");
+                }}
+                className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary"
+                placeholder="admin@ninamart.com"
+                autoComplete="email"
+                autoFocus
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-password" className="block text-xs font-semibold text-slate-300 uppercase tracking-wide mb-1.5">
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                value={pw}
+                onChange={(e) => {
+                  setPw(e.target.value);
+                  setLoginError("");
+                }}
+                className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary"
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            {loginError && <p className="text-red-300 text-sm">{loginError}</p>}
             <button type="submit" className="w-full py-2.5 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark transition-all">
               Login
             </button>
@@ -306,7 +399,16 @@ export default function Admin({ navigate }) {
             <button type="button" onClick={handleReset} className="px-4 py-2 rounded-lg border border-amber-300/40 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25 text-sm font-semibold">
               Reset Default
             </button>
-            <button type="button" onClick={() => setAuthed(false)} className="px-4 py-2 rounded-lg border border-red-300/40 bg-red-500/15 text-red-100 hover:bg-red-500/25 text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthed(false);
+                setEmail("");
+                setPw("");
+                setLoginError("");
+              }}
+              className="px-4 py-2 rounded-lg border border-red-300/40 bg-red-500/15 text-red-100 hover:bg-red-500/25 text-sm font-semibold"
+            >
               Logout
             </button>
           </div>
@@ -319,6 +421,114 @@ export default function Admin({ navigate }) {
           <StatCard label="In Stock" value={stats.inStock} tone="green" />
           <StatCard label="Featured" value={stats.featured} tone="amber" />
           <StatCard label="Total Value" value={`Br ${stats.totalValue.toLocaleString()}`} tone="sky" />
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Store Analytics</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Track storefront visits and how often each product detail page was opened.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleResetAnalytics}
+              className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Reset stats
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+            <StatCard label="Site Visits" value={analytics.totalVisits} tone="violet" />
+            <StatCard label="Unique Visitors" value={analytics.uniqueVisitors} tone="rose" />
+            <StatCard
+              label="Detail Page Views"
+              value={analytics.totalDetailViews}
+              tone="sky"
+            />
+          </div>
+          {analytics.lastVisitAt && (
+            <p className="text-xs text-slate-500 mb-4">
+              Last visit recorded: {new Date(analytics.lastVisitAt).toLocaleString()}
+            </p>
+          )}
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-xs tracking-wide">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Product</th>
+                  <th className="px-4 py-3 font-semibold">Category</th>
+                  <th className="px-4 py-3 font-semibold">Last visited</th>
+                  <th className="px-4 py-3 font-semibold text-right">Detail views</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productViewRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                      No product detail views yet. Views are counted when a customer opens a product page.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedProductViewRows.map((row) => (
+                    <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50/80">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {row.image ? (
+                            <img
+                              src={row.image}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 shrink-0" />
+                          )}
+                          <span className="font-medium text-slate-900">{row.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 capitalize">{row.category}</td>
+                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                        {row.lastViewedAt
+                          ? new Date(row.lastViewedAt).toLocaleString()
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-slate-900">{row.views}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {productViewRows.length > PRODUCT_VIEWS_PAGE_SIZE && (
+            <div className="flex items-center justify-center gap-4 mt-4">
+              <button
+                type="button"
+                onClick={() => setProductViewsPage((p) => Math.max(1, p - 1))}
+                disabled={productViewsPage <= 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Prev
+              </button>
+              <span className="text-sm font-semibold text-slate-600 tabular-nums">
+                {productViewsPage}/{productViewsTotalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setProductViewsPage((p) => Math.min(productViewsTotalPages, p + 1))
+                }
+                disabled={productViewsPage >= productViewsTotalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
+          <p className="text-xs text-slate-400 mt-3">
+            Visits count each time the store loads in a browser. Unique visitors are estimated per browser tab session.
+            Product views count each time a customer opens that product&apos;s detail page.
+          </p>
         </section>
 
         <section className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
@@ -356,6 +566,28 @@ export default function Admin({ navigate }) {
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Original Price</label>
                   <input className={inputCls} type="number" min="1" value={form.originalPrice} onChange={(e) => handleChange("originalPrice", e.target.value)} placeholder="179900" />
                 </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rating (0–5)</label>
+                <div className="flex items-center gap-3 mt-1">
+                  <input
+                    className={inputCls}
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={form.rating}
+                    onChange={(e) => handleChange("rating", e.target.value)}
+                    placeholder="4.5"
+                  />
+                  <span className="text-amber-500 text-lg shrink-0" aria-hidden>
+                    {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(form.rating) || 0))))}
+                    <span className="text-slate-400 text-sm">
+                      {"☆".repeat(Math.max(0, 5 - Math.min(5, Math.round(Number(form.rating) || 0))))}
+                    </span>
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Shown on product cards and detail pages.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -473,7 +705,8 @@ export default function Admin({ navigate }) {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
                           <p className="text-xs text-slate-500">
-                            {p.category} · Br {Number(p.price).toLocaleString()} · {p.availability === "available" ? "In Stock" : "Out of Stock"}
+                            {p.category} · Br {Number(p.price).toLocaleString()} · ★ {p.rating ?? "—"} ·{" "}
+                            {p.availability === "available" ? "In Stock" : "Out of Stock"}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5 justify-end">
@@ -510,6 +743,8 @@ function StatCard({ label, value, tone }) {
     green: "from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-100",
     amber: "from-amber-50 to-amber-100 text-amber-700 border-amber-100",
     sky: "from-sky-50 to-sky-100 text-sky-700 border-sky-100",
+    violet: "from-violet-50 to-violet-100 text-violet-700 border-violet-100",
+    rose: "from-rose-50 to-rose-100 text-rose-700 border-rose-100",
   };
   return (
     <div className={`rounded-xl border p-4 bg-gradient-to-br ${toneMap[tone]}`}>

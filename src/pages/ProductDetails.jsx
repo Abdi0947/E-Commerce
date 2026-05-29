@@ -104,7 +104,7 @@ export default function ProductDetails({ productId, navigate }) {
     <main className="bg-white pb-12 animate-fade-in">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4">
         <div className="text-[12px] text-slate-400 mb-4">
-          Home <span className="mx-1.5">›</span> Laptops <span className="mx-1.5">›</span>{" "}
+          Home <span className="mx-1.5">›</span> Product <span className="mx-1.5">›</span>{" "}
           <span className="text-slate-700">{product.name}</span>
         </div>
 

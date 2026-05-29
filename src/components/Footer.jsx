@@ -1,4 +1,25 @@
-import { PHONE, TELEGRAM } from "../data/products";
+import { PHONE, TELEGRAM, FACEBOOK, INSTAGRAM } from "../data/products";
+
+const socialLinks = [
+  {
+    href: FACEBOOK,
+    label: "Facebook",
+    icon: "groups",
+    className: "footer-social-link footer-social-link--facebook",
+  },
+  {
+    href: INSTAGRAM,
+    label: "Instagram",
+    icon: "photo_camera",
+    className: "footer-social-link footer-social-link--instagram",
+  },
+  {
+    href: TELEGRAM,
+    label: "Telegram",
+    icon: "send",
+    className: "footer-social-link footer-social-link--telegram",
+  },
+];
 
 export default function Footer() {
   return (
@@ -15,10 +36,19 @@ export default function Footer() {
           <p className="text-[13.5px] text-slate-400 leading-relaxed max-w-[240px]">
             Your one-stop destination for the latest electronics with the best prices and quality.
           </p>
-          <div className="flex items-center gap-3 mt-4 text-lg">
-            <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">f</a>
-            <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">i</a>
-            <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">x</a>
+          <div className="flex items-center gap-3 mt-4">
+            {socialLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={link.label}
+                className={link.className}
+              >
+                <span className="material-symbols-outlined text-[20px] leading-none">{link.icon}</span>
+              </a>
+            ))}
           </div>
         </div>
         <div>
@@ -48,7 +78,9 @@ export default function Footer() {
             <p>Shipping Policy</p>
             <p>Returns & Refunds</p>
             <p>FAQ</p>
-            <a href={TELEGRAM} target="_blank" rel="noreferrer">Telegram</a>
+            <a href={TELEGRAM} target="_blank" rel="noreferrer">
+              Telegram
+            </a>
           </div>
         </div>
         <div>
@@ -64,7 +96,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-center text-[13px] text-slate-500">
-          © 2026 NinaMart. All rights reserved.
+          © {new Date().getFullYear()} NinaMart. All rights reserved.
         </div>
       </div>
     </footer>

@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import ProductDetails from "./pages/ProductDetails";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+import { recordSiteVisit, recordProductView } from "./utils/analytics";
 
 function App() {
   const [page, setPage] = useState("home");
@@ -15,11 +16,20 @@ function App() {
   const [searchCategory, setSearchCategory] = useState("all");
 
   const navigate = (target, scroll = null, id = null) => {
+    if (target === "product" && id != null) {
+      recordProductView(id);
+    }
     setPage(target);
     setProductId(id);
     setScrollTarget(scroll);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if (page !== "admin") {
+      recordSiteVisit();
+    }
+  }, []);
 
   useEffect(() => {
     if (scrollTarget === "products" || scrollTarget === "categories") {
