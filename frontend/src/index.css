@@ -135,12 +135,17 @@
     box-shadow: 0 10px 24px -8px rgba(38, 165, 228, 0.6);
   }
 
-  .footer-social-link .material-symbols-outlined {
+  .footer-social-link .material-symbols-outlined,
+  .footer-social-link svg {
     @apply transition-transform duration-300;
   }
 
-  .footer-social-link:hover .material-symbols-outlined {
+  .footer-social-link:hover .material-symbols-outlined,
+  .footer-social-link:hover svg {
     @apply scale-110;
+  }
+
+  .footer-social-link:hover .material-symbols-outlined {
     font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
   }
 }

@@ -1,10 +1,22 @@
 import { PHONE, TELEGRAM, FACEBOOK, INSTAGRAM } from "../data/products";
 
+function FacebookIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-5 h-5 fill-current"
+      aria-hidden="true"
+    >
+      <path d="M14.5 4H17V1h-3c-2.8 0-4.5 1.7-4.5 4.5V9H7v3.5h2.5V23h3.5v-10.5H16l.5-3.5h-3V7.2c0-1 .8-1.7 2-1.7z" />
+    </svg>
+  );
+}
+
 const socialLinks = [
   {
     href: FACEBOOK,
     label: "Facebook",
-    icon: "groups",
+    icon: <FacebookIcon />,
     className: "footer-social-link footer-social-link--facebook",
   },
   {
@@ -46,7 +58,11 @@ export default function Footer() {
                 aria-label={link.label}
                 className={link.className}
               >
-                <span className="material-symbols-outlined text-[20px] leading-none">{link.icon}</span>
+                {typeof link.icon === "string" ? (
+                  <span className="material-symbols-outlined text-[20px] leading-none">{link.icon}</span>
+                ) : (
+                  link.icon
+                )}
               </a>
             ))}
           </div>

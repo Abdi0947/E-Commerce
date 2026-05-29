@@ -1,11 +1,37 @@
 import { useEffect, useState } from "react";
 
-export default function Navbar({ page, navigate, onSearch }) {
+export default function Navbar({ page, homeSection, navigate, onSearch }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCat, setSearchCat] = useState("All Categories");
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const navLinks = ["Home","Popular", "Best Sellers", "Contact"];
+  const navLinks = ["Home", "Popular", "Best Sellers", "Contact"];
+
+  const navScrollTargets = {
+    Popular: "popular",
+    "Best Sellers": "best-sellers",
+  };
+
+  const isNavActive = (label) => {
+    if (label === "Contact") return page === "contact";
+    if (label === "Home") return page === "home" && !homeSection;
+    if (label === "Popular") return page === "home" && homeSection === "popular";
+    if (label === "Best Sellers") return page === "home" && homeSection === "best-sellers";
+    return false;
+  };
+
+  const handleNavClick = (label) => {
+    if (label === "Contact") {
+      navigate("contact");
+      return;
+    }
+    const scrollTo = navScrollTargets[label];
+    if (scrollTo) {
+      navigate("home", scrollTo);
+      return;
+    }
+    navigate("home");
+  };
 
   const categories = [
     "All Categories", "Smartphones", "Laptops", "Headphones",
@@ -110,16 +136,13 @@ export default function Navbar({ page, navigate, onSearch }) {
           {navLinks.map((label) => (
             <button
               key={label}
-              className={`h-10 shrink-0 text-[12.5px] font-medium border-b-2 ${
-                page === "home" && label === "Home"
+              type="button"
+              className={`h-10 shrink-0 text-[12.5px] font-medium border-b-2 transition-colors ${
+                isNavActive(label)
                   ? "text-primary-light border-primary-light"
                   : "text-white/80 border-transparent hover:text-white"
               }`}
-              onClick={() => {
-                if (label === "Contact") navigate("contact");
-                else if (label === "Categories") navigate("home", "categories");
-                else navigate("home");
-              }}
+              onClick={() => handleNavClick(label)}
             >
               {label}
             </button>

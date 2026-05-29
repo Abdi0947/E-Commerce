@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import ProductCard from "./ProductCard";
 
-export default function ProductCarousel({ title, products, navigate }) {
+export default function ProductCarousel({ title, products, navigate, sectionId }) {
   const trackRef = useRef(null);
   const [offset, setOffset] = useState(0);
 
@@ -13,15 +13,19 @@ export default function ProductCarousel({ title, products, navigate }) {
   const scrollRight = () => setOffset((o) => Math.min(maxOffset, o + 1));
 
   const translateX = -(offset * CARD_W);
-  const sectionId  = `section-title-${title.replace(/\s+/g, "-").toLowerCase()}`;
+  const titleId = `section-title-${title.replace(/\s+/g, "-").toLowerCase()}`;
   const showArrows = products.length > visibleCount;
 
   return (
-    <section className="py-9 bg-white" aria-labelledby={sectionId}>
+    <section
+      id={sectionId}
+      className="py-9 bg-white scroll-mt-[110px]"
+      aria-labelledby={titleId}
+    >
 
       {/* Header */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 flex items-center justify-between mb-4">
-        <h2 id={sectionId} className="text-[24px] sm:text-[30px] font-bold text-slate-900 tracking-tight">
+        <h2 id={titleId} className="text-[24px] sm:text-[30px] font-bold text-slate-900 tracking-tight">
           {title}
         </h2>
         <button

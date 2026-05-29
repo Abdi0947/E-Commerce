@@ -47,11 +47,21 @@ export default function Home({ navigate, searchQuery = "", searchCategory = "all
       </div>
 
       {filteredPopular.length > 0 && (
-        <ProductCarousel title="Popular Products" products={filteredPopular} navigate={navigate} />
+        <ProductCarousel
+          sectionId="popular"
+          title="Popular Products"
+          products={filteredPopular}
+          navigate={navigate}
+        />
       )}
 
       {filteredBestSeller.length > 0 && (
-        <ProductCarousel title="Best Sellers" products={filteredBestSeller} navigate={navigate} />
+        <ProductCarousel
+          sectionId="best-sellers"
+          title="Best Sellers"
+          products={filteredBestSeller}
+          navigate={navigate}
+        />
       )}
 
       {hasNoSearchResults && (

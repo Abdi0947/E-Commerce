@@ -11,6 +11,7 @@ const slides = [
     accent: "EMPOWERS YOU",
     subtitle: "Discover the latest electronics with unbeatable performance.",
     cta: "Shop Now",
+    scrollTo: "popular",
     image: HERO_IMAGE,
     bg: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 40%, #312e81 100%)",
     glow: "rgba(99,102,241,0.25)",
@@ -21,6 +22,7 @@ const slides = [
     accent: "EVERYWHERE",
     subtitle: "Experience the world's finest audio technology at your fingertips.",
     cta: "Explore Audio",
+    scrollTo: "best-sellers",
     image: HERO_IMAGE_2,
     bg: "linear-gradient(135deg, #0f172a 0%, #172554 40%, #1e1b4b 100%)",
     glow: "rgba(139,92,246,0.25)",
@@ -84,7 +86,7 @@ export default function Hero({ navigate }) {
               </p>
               <button
                 className="inline-flex items-center gap-2 bg-primary text-white px-5 sm:px-7 py-[10px] sm:py-[12px] rounded-[10px] text-[14px] sm:text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(79,70,229,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(79,70,229,0.5)]"
-                onClick={() => navigate("home", "products")}
+                onClick={() => navigate("home", slide.scrollTo || "categories")}
                 id={`hero-cta-${i}`}
               >
                 {slide.cta}

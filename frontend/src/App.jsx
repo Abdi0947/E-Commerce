@@ -11,6 +11,7 @@ function App() {
   const [page, setPage] = useState("home");
   const [productId, setProductId] = useState(null);
   const [scrollTarget, setScrollTarget] = useState(null);
+  const [homeSection, setHomeSection] = useState(null);
   const [showAdminFab, setShowAdminFab] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState("all");
@@ -19,10 +20,14 @@ function App() {
     if (target === "product" && id != null) {
       recordProductView(id);
     }
+    const pageChanging = target !== page;
     setPage(target);
     setProductId(id);
     setScrollTarget(scroll);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setHomeSection(target === "home" ? scroll : null);
+    if (pageChanging) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -31,15 +36,32 @@ function App() {
     }
   }, []);
 
+  const HOME_SCROLL_TARGETS = ["products", "categories", "popular", "best-sellers"];
+
   useEffect(() => {
-    if (scrollTarget === "products" || scrollTarget === "categories") {
-      setTimeout(() => {
-        const el = document.getElementById(scrollTarget);
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-      setScrollTarget(null);
-    }
-  }, [scrollTarget]);
+    if (page !== "home" || !scrollTarget || !HOME_SCROLL_TARGETS.includes(scrollTarget)) return;
+
+    let attempts = 0;
+    let timerId;
+
+    const tryScroll = () => {
+      const el = document.getElementById(scrollTarget);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        setScrollTarget(null);
+        return;
+      }
+      if (attempts < 12) {
+        attempts += 1;
+        timerId = setTimeout(tryScroll, 100);
+      } else {
+        setScrollTarget(null);
+      }
+    };
+
+    timerId = setTimeout(tryScroll, 80);
+    return () => clearTimeout(timerId);
+  }, [scrollTarget, page]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -64,7 +86,7 @@ function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar page={page} navigate={navigate} onSearch={handleSearch} />
+      <Navbar page={page} homeSection={homeSection} navigate={navigate} onSearch={handleSearch} />
 
       <div className="flex-1">
         {page === "home" && (
