@@ -35,10 +35,7 @@ npm run dev
 
 Store: `http://localhost:5173` — API requests proxy to port 3001.
 
-### Admin login
 
-- Email: `admin@ninamart.com`
-- Password: `aero2025`
 
 Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env` before `npm run db:setup` to use custom credentials.
 
