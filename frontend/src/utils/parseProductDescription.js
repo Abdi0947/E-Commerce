@@ -1,8 +1,18 @@
+/** Admin description point separator (Product Detail Delimiter). */
+export const DESCRIPTION_SEPARATOR = "PDD";
+
 /** Turn a plain-text product description into scannable list items. */
 export function parseProductDescription(text) {
   if (!text?.trim()) return [];
 
   const normalized = text.trim().replace(/\s+/g, " ");
+
+  if (/\s*PDD\s*/i.test(normalized)) {
+    return normalized
+      .split(/\s*PDD\s*/i)
+      .map((part) => part.trim().replace(/[.!?]$/, ""))
+      .filter(Boolean);
+  }
 
   if (normalized.includes("\n")) {
     return normalized

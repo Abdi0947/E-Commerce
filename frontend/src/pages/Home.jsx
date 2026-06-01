@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import defaultProducts from "../data/products";
+import { fetchProducts } from "../api/products";
 import Hero from "../components/Hero";
 import CategoryStrip from "../components/CategoryStrip";
 import ProductCarousel from "../components/ProductCarousel";
@@ -7,12 +7,31 @@ import FeatureStrip from "../components/FeatureStrip";
 
 export default function Home({ navigate, searchQuery = "", searchCategory = "all", onClearSearch }) {
   const [allProducts, setAllProducts] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem("aero_products");
-    setAllProducts(stored ? JSON.parse(stored) : defaultProducts);
+    let cancelled = false;
+    setLoading(true);
+    fetchProducts()
+      .then((data) => {
+        if (!cancelled) {
+          setAllProducts(data);
+          setLoadError("");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError("Could not load products. Please ensure the API server is running.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const [activeCategory, setActiveCategory] = useState("all");
 
   useEffect(() => {
     if (!searchCategory) return;
@@ -34,6 +53,8 @@ export default function Home({ navigate, searchQuery = "", searchCategory = "all
   const filteredPopular = categoryFilter(popular);
   const filteredBestSeller = categoryFilter(bestSeller);
   const hasNoSearchResults =
+    !loading &&
+    !loadError &&
     (searchQuery || searchCategory !== "all") &&
     filteredPopular.length === 0 &&
     filteredBestSeller.length === 0;
@@ -45,7 +66,15 @@ export default function Home({ navigate, searchQuery = "", searchCategory = "all
         <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} />
       </div>
 
-      {filteredPopular.length > 0 && (
+      {loading && (
+        <p className="text-center text-slate-500 py-12">Loading products…</p>
+      )}
+
+      {loadError && (
+        <p className="text-center text-red-500 py-12 px-4">{loadError}</p>
+      )}
+
+      {!loading && !loadError && filteredPopular.length > 0 && (
         <ProductCarousel
           sectionId="popular"
           title="Popular Products"
@@ -54,7 +83,7 @@ export default function Home({ navigate, searchQuery = "", searchCategory = "all
         />
       )}
 
-      {filteredBestSeller.length > 0 && (
+      {!loading && !loadError && filteredBestSeller.length > 0 && (
         <ProductCarousel
           sectionId="best-sellers"
           title="Best Sellers"

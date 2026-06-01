@@ -1,21 +1,39 @@
 import { useState, useEffect, useMemo } from "react";
-import defaultProducts, { PHONE, TELEGRAM } from "../data/products";
+import { PHONE, TELEGRAM } from "../data/products";
+import { fetchProducts } from "../api/products";
 import { parseProductDescription } from "../utils/parseProductDescription";
 
 
 export default function ProductDetails({ productId, navigate }) {
   const [product, setProduct] = useState(null);
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
-    const stored = localStorage.getItem("aero_products");
-    const list = stored ? JSON.parse(stored) : defaultProducts;
-    setProducts(list);
-    setProduct(list.find((p) => p.id === productId) || null);
+    let cancelled = false;
+    setLoading(true);
     setSelectedImage(0);
+    fetchProducts()
+      .then((list) => {
+        if (cancelled) return;
+        setProducts(list);
+        setProduct(list.find((p) => String(p.id) === String(productId)) || null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProducts([]);
+          setProduct(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [productId]);
 
   useEffect(() => {
@@ -88,6 +106,14 @@ export default function ProductDetails({ productId, navigate }) {
   const zoomIn = () => setZoomLevel((z) => Math.min(3, +(z + 0.2).toFixed(1)));
   const zoomOut = () => setZoomLevel((z) => Math.max(1, +(z - 0.2).toFixed(1)));
   const resetZoom = () => setZoomLevel(1);
+
+  if (loading) {
+    return (
+      <div className="text-center py-20 text-slate-500">
+        <p>Loading product…</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
