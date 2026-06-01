@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import defaultProducts from "../data/products";
-import ProductCard from "../components/ProductCard";
 import Hero from "../components/Hero";
 import CategoryStrip from "../components/CategoryStrip";
 import ProductCarousel from "../components/ProductCarousel";
