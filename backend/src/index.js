@@ -53,11 +53,11 @@ async function bootstrap() {
   await ensureProductSchema();
   await ensureAdminUser();
 
-  const rows = await query("SELECT id FROM products LIMIT 1");
-  if (rows.length === 0) {
-    await seedProducts();
-    console.log("Default products seeded.");
-  }
+  // const rows = await query("SELECT id FROM products LIMIT 1");
+  // if (rows.length === 0) {
+  //   await seedProducts();
+  //   console.log("Default products seeded.");
+  // }
 
   app.listen(config.port, () => {
     console.log(`NinaMart API running on http://localhost:${config.port}`);
