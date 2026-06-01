@@ -1,5 +1,6 @@
 import { pool, query } from "../db/pool.js";
 import { defaultProducts } from "../data/defaultProducts.js";
+import { deleteProductUploadImages } from "../utils/deleteUploadFile.js";
 import { bodyToDbFields, rowToProduct } from "../utils/productMapper.js";
 
 function prepareSeedProduct(p) {
@@ -73,8 +74,13 @@ export async function restoreProduct(id) {
   return result.affectedRows > 0;
 }
 
-/** Permanently remove product from database. */
+/** Permanently remove product from database and its uploaded image files. */
 export async function deleteProductPermanently(id) {
+  const product = await getProductById(id);
+  if (!product) return false;
+
+  await deleteProductUploadImages(product);
+
   await query("DELETE FROM product_view_stats WHERE product_id = :id", { id });
   const result = await query("DELETE FROM products WHERE id = :id", { id });
   return result.affectedRows > 0;
