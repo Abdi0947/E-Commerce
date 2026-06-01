@@ -36,6 +36,14 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
+  .animate-cart-float {
+    animation: cart-float 2.2s ease-in-out infinite;
+  }
+
+  .animate-cart-wiggle {
+    animation: cart-wiggle 2.5s ease-in-out infinite;
+  }
 }
 
 @keyframes fade-in {
@@ -46,6 +54,17 @@
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cart-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.05); }
+}
+
+@keyframes cart-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
 }
 
 /* ===== BASE RESET ===== */

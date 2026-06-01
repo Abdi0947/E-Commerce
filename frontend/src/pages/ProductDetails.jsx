@@ -1,21 +1,40 @@
 import { useState, useEffect, useMemo } from "react";
-import defaultProducts, { PHONE, TELEGRAM } from "../data/products";
 import FeatureStrip from "../components/FeatureStrip";
+import { PHONE, TELEGRAM } from "../data/products";
+import { fetchProducts } from "../api/products";
+import { parseProductDescription } from "../utils/parseProductDescription";
 
 
 export default function ProductDetails({ productId, navigate }) {
   const [product, setProduct] = useState(null);
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
-    const stored = localStorage.getItem("aero_products");
-    const list = stored ? JSON.parse(stored) : defaultProducts;
-    setProducts(list);
-    setProduct(list.find((p) => p.id === productId) || null);
+    let cancelled = false;
+    setLoading(true);
     setSelectedImage(0);
+    fetchProducts()
+      .then((list) => {
+        if (cancelled) return;
+        setProducts(list);
+        setProduct(list.find((p) => String(p.id) === String(productId)) || null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProducts([]);
+          setProduct(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [productId]);
 
   useEffect(() => {
@@ -58,6 +77,10 @@ export default function ProductDetails({ productId, navigate }) {
   const related = product
     ? products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4)
     : [];
+  const descriptionPoints = useMemo(
+    () => (product ? parseProductDescription(product.description) : []),
+    [product],
+  );
   const prevImage = () =>
     setSelectedImage((prev) => (prev - 1 + interactiveGallery.length) % interactiveGallery.length);
   const nextImage = () => setSelectedImage((prev) => (prev + 1) % interactiveGallery.length);
@@ -84,6 +107,14 @@ export default function ProductDetails({ productId, navigate }) {
   const zoomIn = () => setZoomLevel((z) => Math.min(3, +(z + 0.2).toFixed(1)));
   const zoomOut = () => setZoomLevel((z) => Math.max(1, +(z - 0.2).toFixed(1)));
   const resetZoom = () => setZoomLevel(1);
+
+  if (loading) {
+    return (
+      <div className="text-center py-20 text-slate-500">
+        <p>Loading product…</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -175,15 +206,56 @@ export default function ProductDetails({ productId, navigate }) {
               ))}
             </div>
 
-            <div className="mt-8">
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Product Description</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>
-              <ul className="mt-4 text-sm text-slate-700 space-y-1">
-                <li>• Brand: {product.name.split(" ")[0]}</li>
-                <li>• Category: {product.category}</li>
-                <li>• Rating: {product.rating} / 5</li>
-                <li>• Availability: {available ? "In Stock" : "Out of Stock"}</li>
+            <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Product Description</h3>
+              <ul className="space-y-3">
+                {descriptionPoints.map((point, idx) => (
+                  <li key={idx} className="flex gap-3 text-sm text-slate-700 leading-relaxed">
+                    <span
+                      className="material-symbols-outlined text-primary text-[20px] leading-none shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    >
+                      check_circle
+                    </span>
+                    <span>{point}</span>
+                  </li>
+                ))}
               </ul>
+              <div className="mt-6 pt-5 border-t border-slate-200">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
+                  Quick details
+                </h4>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm text-slate-700">
+                  <li className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2">
+                    <span className="material-symbols-outlined text-[18px] text-slate-400">sell</span>
+                    <span>
+                      <span className="text-slate-500">Brand:</span> {product.name.split(" ")[0]}
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2">
+                    <span className="material-symbols-outlined text-[18px] text-slate-400">category</span>
+                    <span>
+                      <span className="text-slate-500">Category:</span>{" "}
+                      <span className="capitalize">{product.category}</span>
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2">
+                    <span className="material-symbols-outlined text-[18px] text-amber-500">star</span>
+                    <span>
+                      <span className="text-slate-500">Rating:</span> {product.rating} / 5
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2">
+                    <span className="material-symbols-outlined text-[18px] text-slate-400">
+                      {available ? "inventory_2" : "block"}
+                    </span>
+                    <span>
+                      <span className="text-slate-500">Availability:</span>{" "}
+                      {available ? "In Stock" : "Out of Stock"}
+                    </span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
 
@@ -213,24 +285,7 @@ export default function ProductDetails({ productId, navigate }) {
               Power meets portability with this premium product, built for performance and all-day reliability.
             </p>
 
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Processor</p>
-                <p className="text-sm font-semibold text-slate-800">High Performance Chipset</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Storage</p>
-                <p className="text-sm font-semibold text-slate-800">1TB PCIe 4.0 SSD</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Memory</p>
-                <p className="text-sm font-semibold text-slate-800">16GB LPDDR5</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Display</p>
-                <p className="text-sm font-semibold text-slate-800">14 inch OLED</p>
-              </div>
-            </div>
+            <FeatureStrip embedded />
 
             <div className="mb-6">
               <p className="text-sm text-slate-600 mb-2">Color:</p>
@@ -254,8 +309,6 @@ export default function ProductDetails({ productId, navigate }) {
                 </a>
               </div>
             </div>
-
-            {/* <FeatureStrip /> */}
 
             {!available && (
               <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">

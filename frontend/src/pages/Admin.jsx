@@ -1,13 +1,11 @@
-import { useMemo, useState, useEffect } from "react";
-import defaultProducts, { categories } from "../data/products";
-import {
-  getAnalyticsSummary,
-  getProductViewsSorted,
-  resetAnalytics,
-} from "../utils/analytics";
-
-const ADMIN_EMAIL = "admin@ninamart.com";
-const ADMIN_PASSWORD = "aero2025";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { categories } from "../data/products";
+import * as authApi from "../api/auth.js";
+import * as productsApi from "../api/products.js";
+import { uploadProductImage } from "../api/uploads.js";
+import { getAnalyticsSummary, getProductViewsSorted, resetAnalytics } from "../utils/analytics";
+import { getToken } from "../api/client.js";
+import { DESCRIPTION_SEPARATOR } from "../utils/parseProductDescription";
 const PRODUCT_VIEWS_PAGE_SIZE = 5;
 const emptyForm = {
   name: "",
@@ -15,6 +13,7 @@ const emptyForm = {
   price: "",
   originalPrice: "",
   rating: "4.5",
+  reviewCount: "0",
   image: "",
   galleryImages: [""],
   availability: "available",
@@ -34,32 +33,67 @@ export default function Admin({ navigate }) {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [uploadingField, setUploadingField] = useState(null);
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [hideConfirm, setHideConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [visibilityFilter, setVisibilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("latest");
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [analytics, setAnalytics] = useState({
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    totalDetailViews: 0,
+    lastVisitAt: null,
+  });
+  const [productViewRows, setProductViewRows] = useState([]);
 
-  useEffect(() => {
-    if (!authed) return;
-    const stored = localStorage.getItem("aero_products");
-    setProducts(stored ? JSON.parse(stored) : defaultProducts);
-  }, [authed]);
+  const loadProducts = useCallback(async () => {
+    const list = await productsApi.fetchProductsForAdmin();
+    setProducts(list);
+    return list;
+  }, []);
 
-  const saveProducts = (updated) => {
-    setProducts(updated);
-    localStorage.setItem("aero_products", JSON.stringify(updated));
-  };
+  const loadAnalytics = useCallback(async () => {
+    const [summary, rows] = await Promise.all([getAnalyticsSummary(), getProductViewsSorted()]);
+    setAnalytics(summary);
+    setProductViewRows(rows);
+  }, []);
 
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(""), 2500);
   };
+
+  useEffect(() => {
+    if (!getToken()) return;
+    authApi
+      .getMe()
+      .then(() => setAuthed(true))
+      .catch(() => authApi.logout());
+  }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    setLoading(true);
+    Promise.all([loadProducts(), loadAnalytics()])
+      .catch((err) => showSuccess(err.message || "Failed to load dashboard."))
+      .finally(() => setLoading(false));
+
+    const interval = setInterval(() => {
+      loadAnalytics().catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [authed, loadProducts, loadAnalytics]);
 
   const parsePrice = (value) => Number(value || 0);
 
@@ -72,6 +106,11 @@ export default function Admin({ navigate }) {
     const rating = Math.min(
       5,
       Math.max(0, Number.isFinite(parsedRating) ? parsedRating : 4.5),
+    );
+    const parsedReviewCount = Number(source.reviewCount);
+    const reviewCount = Math.max(
+      0,
+      Number.isFinite(parsedReviewCount) ? Math.floor(parsedReviewCount) : 0,
     );
     const homeImage = source.image.trim();
     const extraImages = (source.galleryImages || []).map((img) => img.trim()).filter(Boolean);
@@ -86,7 +125,7 @@ export default function Admin({ navigate }) {
       originalPrice,
       discount,
       rating: Math.round(rating * 10) / 10,
-      reviewCount: existing?.reviewCount ?? 0,
+      reviewCount,
       image: homeImage,
       detailImage,
       gallery: allImages,
@@ -95,18 +134,46 @@ export default function Admin({ navigate }) {
       featured: !!source.featured,
       popular: !!source.popular,
       bestSeller: !!source.bestSeller,
+      isVisible: existing?.isVisible !== false,
     };
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail === ADMIN_EMAIL && pw === ADMIN_PASSWORD) {
+    if (loginLoading) return;
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      await authApi.login(email.trim(), pw);
       setAuthed(true);
-      setLoginError("");
-      return;
+      setPw("");
+    } catch (err) {
+      setLoginError(err.message || "Invalid email or password. Please try again.");
+    } finally {
+      setLoginLoading(false);
     }
-    setLoginError("Invalid email or password. Please try again.");
+  };
+
+  const handleLogout = () => {
+    authApi.logout();
+    setAuthed(false);
+    setEmail("");
+    setPw("");
+    setLoginError("");
+    setProducts([]);
+  };
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([loadProducts(), loadAnalytics()]);
+      showSuccess("Dashboard refreshed.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to refresh dashboard.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -135,10 +202,32 @@ export default function Admin({ navigate }) {
     setFormError("");
   };
 
+  const handleImageFileUpload = async (file, target) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setFormError("Please select a valid image file (JPG, PNG, WebP, or GIF).");
+      return;
+    }
+    setFormError("");
+    setUploadingField(target);
+    try {
+      const { url } = await uploadProductImage(file);
+      if (target === "home") {
+        handleChange("image", url);
+      } else {
+        handleGalleryImageChange(target, url);
+      }
+    } catch (err) {
+      setFormError(err.message || "Image upload failed.");
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const validateForm = () => {
     if (!form.name.trim()) return "Product name is required.";
     if (!form.description.trim()) return "Description is required.";
-    if (!form.image.trim()) return "Home image URL is required.";
+    if (!form.image.trim()) return "Home image is required (upload or paste URL).";
     if (!form.price || isNaN(form.price) || Number(form.price) <= 0) return "Enter a valid price.";
     const homeImage = form.image.trim();
     const extras = (form.galleryImages || []).map((img) => img.trim()).filter((img) => img && img !== homeImage);
@@ -151,6 +240,10 @@ export default function Admin({ navigate }) {
     if (form.rating === "" || isNaN(rating) || rating < 0 || rating > 5) {
       return "Rating must be a number between 0 and 5.";
     }
+    const reviewCount = Number(form.reviewCount);
+    if (form.reviewCount === "" || isNaN(reviewCount) || reviewCount < 0 || !Number.isInteger(reviewCount)) {
+      return "Review count must be a whole number of 0 or more.";
+    }
     return "";
   };
 
@@ -160,7 +253,7 @@ export default function Admin({ navigate }) {
     setFormError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const err = validateForm();
     if (err) {
@@ -168,26 +261,33 @@ export default function Admin({ navigate }) {
       return;
     }
 
-    if (editingId) {
-      const updated = products.map((p) =>
-        String(p.id) === String(editingId) ? normalizeProduct(form, p.id, p) : p,
-      );
-      saveProducts(updated);
-      showSuccess("Product updated successfully.");
+    try {
+      if (editingId) {
+        const existing = products.find((p) => String(p.id) === String(editingId));
+        const payload = normalizeProduct(form, editingId, existing);
+        await productsApi.updateProduct(editingId, payload);
+        showSuccess("Product updated successfully.");
+      } else {
+        const payload = normalizeProduct(form);
+        const created = await productsApi.createProduct(payload);
+        showSuccess(`"${created.name}" added successfully.`);
+      }
+      await loadProducts();
       resetForm();
-      return;
+    } catch (submitErr) {
+      setFormError(submitErr.message || "Failed to save product.");
     }
+  };
 
-    const newProduct = normalizeProduct(form);
-    saveProducts([newProduct, ...products]);
-    showSuccess(`"${newProduct.name}" added successfully.`);
-    resetForm();
+  const clearProductConfirms = () => {
+    setHideConfirm(null);
+    setDeleteConfirm(null);
   };
 
   const handleEdit = (productId) => {
     const product = products.find((item) => String(item.id) === String(productId));
     if (!product) return;
-    setDeleteConfirm(null);
+    clearProductConfirms();
     setEditingId(product.id);
     setForm({
       name: product.name || "",
@@ -195,6 +295,7 @@ export default function Admin({ navigate }) {
       price: String(product.price || ""),
       originalPrice: String(product.originalPrice || product.price || ""),
       rating: String(product.rating ?? "4.5"),
+      reviewCount: String(product.reviewCount ?? 0),
       image: product.image || "",
       galleryImages: (() => {
         const fromGallery = Array.isArray(product.gallery) ? product.gallery : [];
@@ -212,30 +313,79 @@ export default function Admin({ navigate }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = (id) => {
-    saveProducts(products.filter((p) => p.id !== id));
-    setDeleteConfirm(null);
-    if (editingId === id) resetForm();
+  const handleHideProduct = async (id) => {
+    try {
+      await productsApi.hideProduct(id);
+      clearProductConfirms();
+      if (editingId === id) resetForm();
+      await loadProducts();
+      showSuccess("Product hidden from the store.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to hide product.");
+    }
   };
 
-  const toggleField = (id, field) => {
-    saveProducts(products.map((p) => (p.id === id ? { ...p, [field]: !p[field] } : p)));
+  const handleDeleteProduct = async (id) => {
+    try {
+      await productsApi.deleteProduct(id);
+      clearProductConfirms();
+      if (editingId === id) resetForm();
+      await loadProducts();
+      showSuccess("Product permanently deleted.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to delete product.");
+    }
   };
 
-  const toggleAvailability = (id) => {
-    saveProducts(
-      products.map((p) =>
-        p.id === id
-          ? { ...p, availability: p.availability === "available" ? "out_of_stock" : "available" }
-          : p,
-      ),
-    );
+  const handleRestoreProduct = async (id) => {
+    try {
+      await productsApi.restoreProduct(id);
+      await loadProducts();
+      showSuccess("Product is visible on the store again.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to restore product.");
+    }
   };
 
-  const handleReset = () => {
-    saveProducts(defaultProducts);
-    resetForm();
-    showSuccess("Catalogue reset to default products.");
+  const patchProduct = async (id, patch) => {
+    const current = products.find((p) => String(p.id) === String(id));
+    if (!current) return;
+    await productsApi.updateProduct(id, { ...current, ...patch });
+    await loadProducts();
+  };
+
+  const toggleField = async (id, field) => {
+    const current = products.find((p) => p.id === id);
+    if (!current) return;
+    try {
+      await patchProduct(id, { [field]: !current[field] });
+    } catch (err) {
+      showSuccess(err.message || "Update failed.");
+    }
+  };
+
+  const toggleAvailability = async (id) => {
+    const current = products.find((p) => p.id === id);
+    if (!current) return;
+    try {
+      await patchProduct(id, {
+        availability: current.availability === "available" ? "out_of_stock" : "available",
+      });
+    } catch (err) {
+      showSuccess(err.message || "Update failed.");
+    }
+  };
+
+  const handleReset = async () => {
+    if (!window.confirm("Reset catalogue to default products? This cannot be undone.")) return;
+    try {
+      const list = await productsApi.resetProductsCatalogue();
+      setProducts(list);
+      resetForm();
+      showSuccess("Catalogue reset to default products.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to reset catalogue.");
+    }
   };
 
   const handleExport = () => {
@@ -248,6 +398,7 @@ export default function Admin({ navigate }) {
     setSearch("");
     setCategoryFilter("all");
     setAvailabilityFilter("all");
+    setVisibilityFilter("all");
     setSortBy("latest");
   };
 
@@ -259,17 +410,7 @@ export default function Admin({ navigate }) {
     return { total, inStock, featured, totalValue };
   }, [products]);
 
-  const [analyticsVersion, setAnalyticsVersion] = useState(0);
   const [productViewsPage, setProductViewsPage] = useState(1);
-
-  const analytics = useMemo(
-    () => getAnalyticsSummary(),
-    [products, authed, analyticsVersion]
-  );
-  const productViewRows = useMemo(
-    () => getProductViewsSorted(products),
-    [products, authed, analyticsVersion]
-  );
 
   const productViewsTotalPages = Math.max(
     1,
@@ -286,21 +427,16 @@ export default function Admin({ navigate }) {
     }
   }, [productViewsPage, productViewsTotalPages]);
 
-  useEffect(() => {
-    if (!authed) return;
-    const onStorage = (e) => {
-      if (e.key === "aero_analytics") setAnalyticsVersion((v) => v + 1);
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [authed]);
-
-  const handleResetAnalytics = () => {
+  const handleResetAnalytics = async () => {
     if (!window.confirm("Reset all visit and product view statistics?")) return;
-    resetAnalytics();
-    setAnalyticsVersion((v) => v + 1);
-    setProductViewsPage(1);
-    showSuccess("Analytics data cleared.");
+    try {
+      await resetAnalytics();
+      await loadAnalytics();
+      setProductViewsPage(1);
+      showSuccess("Analytics data cleared.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to reset analytics.");
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -313,7 +449,11 @@ export default function Admin({ navigate }) {
       const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
       const matchesAvailability =
         availabilityFilter === "all" || p.availability === availabilityFilter;
-      return matchesSearch && matchesCategory && matchesAvailability;
+      const matchesVisibility =
+        visibilityFilter === "all" ||
+        (visibilityFilter === "visible" && p.isVisible !== false) ||
+        (visibilityFilter === "hidden" && p.isVisible === false);
+      return matchesSearch && matchesCategory && matchesAvailability && matchesVisibility;
     });
 
     return filtered.sort((a, b) => {
@@ -323,13 +463,13 @@ export default function Admin({ navigate }) {
       if (sortBy === "name_desc") return b.name.localeCompare(a.name);
       return b.id - a.id;
     });
-  }, [products, search, categoryFilter, availabilityFilter, sortBy]);
+  }, [products, search, categoryFilter, availabilityFilter, visibilityFilter, sortBy]);
 
   if (!authed) {
     return (
       <div className="min-h-[88vh] bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b] flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-          <p className="text-primary-light text-sm font-semibold tracking-wide uppercase mb-2">ElectroHub</p>
+          <p className="text-primary-light text-sm font-semibold tracking-wide uppercase mb-2">Nina Mart</p>
           <h2 className="text-3xl font-bold text-white mb-2">Admin Console</h2>
           <p className="text-sm text-slate-300 mb-6">Sign in to manage products, pricing and storefront highlights.</p>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -345,7 +485,8 @@ export default function Admin({ navigate }) {
                   setEmail(e.target.value);
                   setLoginError("");
                 }}
-                className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary"
+                disabled={loginLoading}
+                className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="admin@ninamart.com"
                 autoComplete="email"
                 autoFocus
@@ -364,15 +505,26 @@ export default function Admin({ navigate }) {
                   setPw(e.target.value);
                   setLoginError("");
                 }}
-                className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary"
+                disabled={loginLoading}
+                className="w-full px-3 py-2.5 rounded-lg bg-white/95 border border-white/10 text-slate-900 outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 required
               />
             </div>
             {loginError && <p className="text-red-300 text-sm">{loginError}</p>}
-            <button type="submit" className="w-full py-2.5 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark transition-all">
-              Login
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full py-2.5 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loginLoading && (
+                <span
+                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+              {loginLoading ? "Logging in…" : "Login"}
             </button>
           </form>
           <button className="mt-4 text-sm text-slate-300 hover:text-white" onClick={() => navigate("home")}>
@@ -389,24 +541,30 @@ export default function Admin({ navigate }) {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-7 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-primary-light text-xs uppercase tracking-[0.2em] font-semibold">Admin Panel</p>
-            <h1 className="text-3xl font-bold mt-1">ElectroHub Dashboard</h1>
+            <h1 className="text-3xl font-bold mt-1">NinaMart Dashboard</h1>
             <p className="text-slate-300 text-sm mt-1">Manage catalogue, pricing, and visibility in one place.</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button type="button" onClick={handleExport} className="px-4 py-2 rounded-lg border border-white/20 bg-white/10 hover:bg-white/15 text-sm font-semibold">
-              Export JSON
-            </button>
-            <button type="button" onClick={handleReset} className="px-4 py-2 rounded-lg border border-amber-300/40 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25 text-sm font-semibold">
-              Reset Default
-            </button>
             <button
               type="button"
-              onClick={() => {
-                setAuthed(false);
-                setEmail("");
-                setPw("");
-                setLoginError("");
-              }}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/20 bg-white/10 hover:bg-white/15 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span
+                className={`material-symbols-outlined text-[18px] leading-none ${refreshing ? "animate-spin" : ""}`}
+                aria-hidden
+              >
+                refresh
+              </span>
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+            {/* <button type="button" onClick={handleReset} className="px-4 py-2 rounded-lg border border-amber-300/40 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25 text-sm font-semibold">
+              Reset Default
+            </button> */}
+            <button
+              type="button"
+              onClick={handleLogout}
               className="px-4 py-2 rounded-lg border border-red-300/40 bg-red-500/15 text-red-100 hover:bg-red-500/25 text-sm font-semibold"
             >
               Logout
@@ -567,61 +725,70 @@ export default function Admin({ navigate }) {
                   <input className={inputCls} type="number" min="1" value={form.originalPrice} onChange={(e) => handleChange("originalPrice", e.target.value)} placeholder="179900" />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rating (0–5)</label>
-                <div className="flex items-center gap-3 mt-1">
-                  <input
-                    className={inputCls}
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    value={form.rating}
-                    onChange={(e) => handleChange("rating", e.target.value)}
-                    placeholder="4.5"
-                  />
-                  <span className="text-amber-500 text-lg shrink-0" aria-hidden>
-                    {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(form.rating) || 0))))}
-                    <span className="text-slate-400 text-sm">
-                      {"☆".repeat(Math.max(0, 5 - Math.min(5, Math.round(Number(form.rating) || 0))))}
-                    </span>
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">Shown on product cards and detail pages.</p>
-              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Home Image URL</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rating (0–5)</label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <input
+                      className={inputCls}
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={form.rating}
+                      onChange={(e) => handleChange("rating", e.target.value)}
+                      placeholder="4.5"
+                    />
+                    <span className="text-amber-500 text-lg shrink-0" aria-hidden>
+                      {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(form.rating) || 0))))}
+                      <span className="text-slate-400 text-sm">
+                        {"☆".repeat(Math.max(0, 5 - Math.min(5, Math.round(Number(form.rating) || 0))))}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Review Count</label>
                   <input
-                    className={inputCls}
-                    value={form.image}
-                    onChange={(e) => handleChange("image", e.target.value)}
-                    placeholder="Used in home/product cards"
+                    className={`${inputCls} mt-1`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.reviewCount}
+                    onChange={(e) => handleChange("reviewCount", e.target.value)}
+                    placeholder="256"
                   />
                 </div>
               </div>
+              <p className="text-xs text-slate-400 -mt-1">Rating and review count appear on product cards and detail pages.</p>
+              <AdminImageField
+                label="Home Image"
+                value={form.image}
+                onChange={(url) => handleChange("image", url)}
+                onUpload={(file) => handleImageFileUpload(file, "home")}
+                uploading={uploadingField === "home"}
+                inputCls={inputCls}
+              />
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   Product Gallery Images
                 </label>
-                <div className="space-y-2 mt-1">
+                <p className="text-xs text-slate-400 mt-1 mb-2">
+                  Upload or paste URL for each image. At least 2 images total (home + gallery).
+                </p>
+                <div className="space-y-3 mt-1">
                   {form.galleryImages.map((img, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input
-                        className={inputCls}
-                        value={img}
-                        onChange={(e) => handleGalleryImageChange(idx, e.target.value)}
-                        placeholder={`Gallery image URL ${idx + 1}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryImageField(idx)}
-                        className="px-3 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
-                        aria-label={`Remove gallery image ${idx + 1}`}
-                      >
-                        -
-                      </button>
-                    </div>
+                    <AdminImageField
+                      key={idx}
+                      label={`Gallery ${idx + 1}`}
+                      value={img}
+                      onChange={(url) => handleGalleryImageChange(idx, url)}
+                      onUpload={(file) => handleImageFileUpload(file, idx)}
+                      uploading={uploadingField === idx}
+                      inputCls={inputCls}
+                      onRemove={() => removeGalleryImageField(idx)}
+                      compact
+                    />
                   ))}
                   <button
                     type="button"
@@ -635,7 +802,17 @@ export default function Admin({ navigate }) {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Description</label>
-                <textarea className={`${inputCls} resize-none`} rows={4} value={form.description} onChange={(e) => handleChange("description", e.target.value)} placeholder="Write short product details..." />
+                <textarea
+                  className={`${inputCls} resize-none`}
+                  rows={5}
+                  value={form.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  placeholder={`A17 Pro chip ${DESCRIPTION_SEPARATOR} Titanium design ${DESCRIPTION_SEPARATOR} 48MP camera`}
+                />
+                <p className="text-xs text-slate-500 mt-1.5">
+                  Separate each point with <span className="font-semibold text-slate-700">{DESCRIPTION_SEPARATOR}</span>{" "}
+                  (not commas). Example: Feature one {DESCRIPTION_SEPARATOR} Feature two {DESCRIPTION_SEPARATOR} Feature three
+                </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <ToggleChip active={form.featured} label="Featured" onClick={() => handleChange("featured", !form.featured)} />
@@ -662,7 +839,7 @@ export default function Admin({ navigate }) {
               <h2 className="text-xl font-bold text-slate-900">Product Management ({filteredProducts.length})</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-4">
               <input className={inputCls} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name/category..." />
               <select className={selectCls} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="all">All Categories</option>
@@ -674,6 +851,11 @@ export default function Admin({ navigate }) {
                 <option value="all">All Availability</option>
                 <option value="available">Available</option>
                 <option value="out_of_stock">Out of stock</option>
+              </select>
+              <select className={selectCls} value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)}>
+                <option value="all">All Products</option>
+                <option value="visible">Visible on store</option>
+                <option value="hidden">Hidden only</option>
               </select>
               <select className={selectCls} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 <option value="latest">Latest</option>
@@ -699,13 +881,24 @@ export default function Admin({ navigate }) {
               ) : (
                 <div className="divide-y divide-slate-200">
                   {filteredProducts.map((p) => (
-                    <div key={p.id} className="p-3 hover:bg-slate-50 transition-colors">
+                    <div
+                      key={p.id}
+                      className={`p-3 transition-colors ${p.isVisible === false ? "bg-slate-100/80 opacity-75" : "hover:bg-slate-50"}`}
+                    >
                       <div className="flex items-center gap-3">
                         <img src={p.image} alt={p.name} className="w-14 h-14 object-contain rounded-lg bg-white border border-slate-200 p-1 shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
+                            {p.isVisible === false && (
+                              <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-slate-200 text-slate-600">
+                                Hidden
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500">
                             {p.category} · Br {Number(p.price).toLocaleString()} · ★ {p.rating ?? "—"} ·{" "}
+                            {p.reviewCount ?? 0} reviews ·{" "}
                             {p.availability === "available" ? "In Stock" : "Out of Stock"}
                           </p>
                         </div>
@@ -715,13 +908,71 @@ export default function Admin({ navigate }) {
                           <QuickButton active={p.popular} onClick={() => toggleField(p.id, "popular")} label="Popular" />
                           <QuickButton active={p.bestSeller} onClick={() => toggleField(p.id, "bestSeller")} label="Best" />
                           <button type="button" onClick={() => handleEdit(p.id)} className="px-2.5 py-1 text-xs rounded-md border border-slate-200 text-slate-700 hover:bg-slate-100">Edit</button>
-                          {deleteConfirm === p.id ? (
+                          {p.isVisible === false ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRestoreProduct(p.id)}
+                              className="px-2.5 py-1 text-xs rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                            >
+                              Restore
+                            </button>
+                          ) : hideConfirm === p.id ? (
                             <span className="flex items-center gap-1">
-                              <button type="button" onClick={() => handleDelete(p.id)} className="px-2.5 py-1 text-xs rounded-md bg-red-600 text-white">Delete</button>
-                              <button type="button" onClick={() => setDeleteConfirm(null)} className="px-2.5 py-1 text-xs rounded-md border border-slate-200">Cancel</button>
+                              <button
+                                type="button"
+                                onClick={() => handleHideProduct(p.id)}
+                                className="px-2.5 py-1 text-xs rounded-md bg-amber-600 text-white"
+                              >
+                                Hide
+                              </button>
+                              <button
+                                type="button"
+                                onClick={clearProductConfirms}
+                                className="px-2.5 py-1 text-xs rounded-md border border-slate-200"
+                              >
+                                Cancel
+                              </button>
                             </span>
                           ) : (
-                            <button type="button" onClick={() => setDeleteConfirm(p.id)} className="px-2.5 py-1 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50">Remove</button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeleteConfirm(null);
+                                setHideConfirm(p.id);
+                              }}
+                              className="px-2.5 py-1 text-xs rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50"
+                            >
+                              Remove
+                            </button>
+                          )}
+                          {deleteConfirm === p.id ? (
+                            <span className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProduct(p.id)}
+                                className="px-2.5 py-1 text-xs rounded-md bg-red-600 text-white"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                type="button"
+                                onClick={clearProductConfirms}
+                                className="px-2.5 py-1 text-xs rounded-md border border-slate-200"
+                              >
+                                Cancel
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHideConfirm(null);
+                                setDeleteConfirm(p.id);
+                              }}
+                              className="px-2.5 py-1 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
                           )}
                         </div>
                       </div>
@@ -734,6 +985,62 @@ export default function Admin({ navigate }) {
         </section>
       </div>
     </main>
+  );
+}
+
+function AdminImageField({
+  label,
+  value,
+  onChange,
+  onUpload,
+  uploading,
+  inputCls,
+  onRemove,
+  compact = false,
+}) {
+  return (
+    <div className={`rounded-lg border border-slate-200 bg-slate-50/50 ${compact ? "p-3" : "p-4"}`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-xs text-red-500 hover:text-red-600 font-semibold"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      {value && (
+        <img
+          src={value}
+          alt=""
+          className="h-20 w-20 object-contain rounded-lg border border-slate-200 bg-white mb-3"
+        />
+      )}
+      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/30 bg-white text-primary text-sm font-semibold cursor-pointer hover:bg-primary/5 mb-2">
+        <span className="material-symbols-outlined text-base leading-none">upload</span>
+        {uploading ? "Uploading…" : "Upload image"}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          disabled={uploading}
+          onChange={(e) => {
+            onUpload(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      <input
+        className={inputCls}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Or paste image URL (/uploads/… or https://…)"
+        disabled={uploading}
+      />
+    </div>
   );
 }
 
