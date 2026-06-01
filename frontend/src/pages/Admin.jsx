@@ -46,6 +46,7 @@ export default function Admin({ navigate }) {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("latest");
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [analytics, setAnalytics] = useState({
     totalVisits: 0,
     uniqueVisitors: 0,
@@ -153,6 +154,19 @@ export default function Admin({ navigate }) {
     setPw("");
     setLoginError("");
     setProducts([]);
+  };
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([loadProducts(), loadAnalytics()]);
+      showSuccess("Dashboard refreshed.");
+    } catch (err) {
+      showSuccess(err.message || "Failed to refresh dashboard.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -514,6 +528,20 @@ export default function Admin({ navigate }) {
             <p className="text-slate-300 text-sm mt-1">Manage catalogue, pricing, and visibility in one place.</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/20 bg-white/10 hover:bg-white/15 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span
+                className={`material-symbols-outlined text-[18px] leading-none ${refreshing ? "animate-spin" : ""}`}
+                aria-hidden
+              >
+                refresh
+              </span>
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
             <button type="button" onClick={handleExport} className="px-4 py-2 rounded-lg border border-white/20 bg-white/10 hover:bg-white/15 text-sm font-semibold">
               Export JSON
             </button>
