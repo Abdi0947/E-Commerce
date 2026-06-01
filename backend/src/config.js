@@ -13,8 +13,8 @@ export const config = {
   db: {
     host: process.env.DB_HOST || "localhost",
     port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER || "ninmart",
-    password: process.env.DB_PASSWORD || "ninmart",
+    user: process.env.DB_USER || "ninamart",
+    password: process.env.DB_PASSWORD || "ninamart",
     database: process.env.DB_NAME || "ninamart",
   },
   jwt: {
