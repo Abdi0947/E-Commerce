@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const HERO_IMAGE   = "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=900&auto=format&fit=crop&q=80";
+const HERO_IMAGE   = "/uploads/1780321273021-hero.png";
 const HERO_IMAGE_2 = "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=900&auto=format&fit=crop&q=80";
 const HERO_IMAGE_3 = "https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=900&auto=format&fit=crop&q=80";
 
