@@ -44,6 +44,7 @@ export default function Admin({ navigate }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [visibilityFilter, setVisibilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("latest");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -386,6 +387,7 @@ export default function Admin({ navigate }) {
     setSearch("");
     setCategoryFilter("all");
     setAvailabilityFilter("all");
+    setVisibilityFilter("all");
     setSortBy("latest");
   };
 
@@ -436,7 +438,11 @@ export default function Admin({ navigate }) {
       const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
       const matchesAvailability =
         availabilityFilter === "all" || p.availability === availabilityFilter;
-      return matchesSearch && matchesCategory && matchesAvailability;
+      const matchesVisibility =
+        visibilityFilter === "all" ||
+        (visibilityFilter === "visible" && p.isVisible !== false) ||
+        (visibilityFilter === "hidden" && p.isVisible === false);
+      return matchesSearch && matchesCategory && matchesAvailability && matchesVisibility;
     });
 
     return filtered.sort((a, b) => {
@@ -446,13 +452,13 @@ export default function Admin({ navigate }) {
       if (sortBy === "name_desc") return b.name.localeCompare(a.name);
       return b.id - a.id;
     });
-  }, [products, search, categoryFilter, availabilityFilter, sortBy]);
+  }, [products, search, categoryFilter, availabilityFilter, visibilityFilter, sortBy]);
 
   if (!authed) {
     return (
       <div className="min-h-[88vh] bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b] flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-          <p className="text-primary-light text-sm font-semibold tracking-wide uppercase mb-2">ElectroHub</p>
+          <p className="text-primary-light text-sm font-semibold tracking-wide uppercase mb-2">Nina Mart</p>
           <h2 className="text-3xl font-bold text-white mb-2">Admin Console</h2>
           <p className="text-sm text-slate-300 mb-6">Sign in to manage products, pricing and storefront highlights.</p>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -524,7 +530,7 @@ export default function Admin({ navigate }) {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-7 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-primary-light text-xs uppercase tracking-[0.2em] font-semibold">Admin Panel</p>
-            <h1 className="text-3xl font-bold mt-1">ElectroHub Dashboard</h1>
+            <h1 className="text-3xl font-bold mt-1">Nina Mart Dashboard</h1>
             <p className="text-slate-300 text-sm mt-1">Manage catalogue, pricing, and visibility in one place.</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -811,7 +817,7 @@ export default function Admin({ navigate }) {
               <h2 className="text-xl font-bold text-slate-900">Product Management ({filteredProducts.length})</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-4">
               <input className={inputCls} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name/category..." />
               <select className={selectCls} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="all">All Categories</option>
@@ -823,6 +829,11 @@ export default function Admin({ navigate }) {
                 <option value="all">All Availability</option>
                 <option value="available">Available</option>
                 <option value="out_of_stock">Out of stock</option>
+              </select>
+              <select className={selectCls} value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)}>
+                <option value="all">All Products</option>
+                <option value="visible">Visible on store</option>
+                <option value="hidden">Hidden only</option>
               </select>
               <select className={selectCls} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 <option value="latest">Latest</option>
