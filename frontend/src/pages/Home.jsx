@@ -4,6 +4,7 @@ import Hero from "../components/Hero";
 import CategoryStrip from "../components/CategoryStrip";
 import ProductCarousel from "../components/ProductCarousel";
 import FeatureStrip from "../components/FeatureStrip";
+import EmptyProductsState from "../components/EmptyProductsState";
 
 export default function Home({ navigate, searchQuery = "", searchCategory = "all", onClearSearch }) {
   const [allProducts, setAllProducts] = useState([]);
@@ -52,12 +53,26 @@ export default function Home({ navigate, searchQuery = "", searchCategory = "all
 
   const filteredPopular = categoryFilter(popular);
   const filteredBestSeller = categoryFilter(bestSeller);
+
+  const hasNoVisibleProducts =
+    !loading && !loadError && filteredPopular.length === 0 && filteredBestSeller.length === 0;
+
+  const isCatalogueEmpty = hasNoVisibleProducts && allProducts.length === 0;
+
   const hasNoSearchResults =
-    !loading &&
-    !loadError &&
-    (searchQuery || searchCategory !== "all") &&
-    filteredPopular.length === 0 &&
-    filteredBestSeller.length === 0;
+    hasNoVisibleProducts && !isCatalogueEmpty && (searchQuery || searchCategory !== "all");
+
+  const hasNoCategoryResults =
+    hasNoVisibleProducts &&
+    !isCatalogueEmpty &&
+    !hasNoSearchResults &&
+    activeCategory !== "all";
+
+  const hasNoListedProducts =
+    hasNoVisibleProducts &&
+    allProducts.length > 0 &&
+    !hasNoSearchResults &&
+    !hasNoCategoryResults;
 
   return (
     <main>
@@ -92,27 +107,42 @@ export default function Home({ navigate, searchQuery = "", searchCategory = "all
         />
       )}
 
+      {isCatalogueEmpty && (
+        <EmptyProductsState
+          emoji="🛒"
+          title="No products yet"
+          message="Our store is empty right now. Please check back soon — new items will appear here when they are added."
+        />
+      )}
+
       {hasNoSearchResults && (
-        <section className="py-10">
-          <div className="max-w-[1280px] mx-auto px-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <div className="w-16 h-16 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-4">
-                <span className="material-symbols-outlined text-[30px]">search_off</span>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">No products found</h3>
-              <p className="text-slate-500 mb-5">
-                We could not find items matching your search. Try another keyword or choose a different category.
-              </p>
-              <button
-                type="button"
-                onClick={() => (typeof onClearSearch === "function" ? onClearSearch() : navigate("home", "categories"))}
-                className="px-5 py-2.5 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark transition-all"
-              >
-                Browse all products
-              </button>
-            </div>
-          </div>
-        </section>
+        <EmptyProductsState
+          emoji="🔍"
+          title="No products found"
+          message="We could not find items matching your search. Try another keyword or choose a different category."
+          actionLabel="Browse all products"
+          onAction={() =>
+            typeof onClearSearch === "function" ? onClearSearch() : navigate("home", "categories")
+          }
+        />
+      )}
+
+      {hasNoCategoryResults && (
+        <EmptyProductsState
+          emoji="📦"
+          title="No products in this category"
+          message={`There are no items in "${activeCategory}" right now. Try another category or browse everything we have.`}
+          actionLabel="Show all categories"
+          onAction={() => setActiveCategory("all")}
+        />
+      )}
+
+      {hasNoListedProducts && (
+        <EmptyProductsState
+          emoji="🛍️"
+          title="No products to show"
+          message="There are no popular or best seller items listed at the moment. Please check back soon."
+        />
       )}
 
       <FeatureStrip />
