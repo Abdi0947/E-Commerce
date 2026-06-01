@@ -52,6 +52,12 @@ export function bodyToDbFields(body, existing = null) {
   const parsedRating = Number(body.rating);
   const rating = Math.min(5, Math.max(0, Number.isFinite(parsedRating) ? parsedRating : 4.5));
 
+  const parsedReviewCount = Number(body.reviewCount);
+  const review_count =
+    body.reviewCount !== undefined && Number.isFinite(parsedReviewCount)
+      ? Math.max(0, Math.floor(parsedReviewCount))
+      : (existing?.review_count ?? existing?.reviewCount ?? 0);
+
   return {
     name: String(body.name || "").trim(),
     category: body.category || "smartphones",
@@ -59,7 +65,7 @@ export function bodyToDbFields(body, existing = null) {
     original_price: originalPrice,
     discount,
     rating: Math.round(rating * 10) / 10,
-    review_count: existing?.review_count ?? existing?.reviewCount ?? (Number(body.reviewCount) || 0),
+    review_count,
     image,
     detail_image: detailImage,
     gallery: JSON.stringify(gallery.length >= 2 ? gallery : [image, detailImage]),

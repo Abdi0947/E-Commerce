@@ -58,6 +58,7 @@ async function bootstrap() {
   //   await seedProducts();
   //   console.log("Default products seeded.");
   // }
+  
 
   app.listen(config.port, () => {
     console.log(`NinaMart API running on http://localhost:${config.port}`);

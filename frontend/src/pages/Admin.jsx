@@ -13,6 +13,7 @@ const emptyForm = {
   price: "",
   originalPrice: "",
   rating: "4.5",
+  reviewCount: "0",
   image: "",
   galleryImages: [""],
   availability: "available",
@@ -106,6 +107,11 @@ export default function Admin({ navigate }) {
       5,
       Math.max(0, Number.isFinite(parsedRating) ? parsedRating : 4.5),
     );
+    const parsedReviewCount = Number(source.reviewCount);
+    const reviewCount = Math.max(
+      0,
+      Number.isFinite(parsedReviewCount) ? Math.floor(parsedReviewCount) : 0,
+    );
     const homeImage = source.image.trim();
     const extraImages = (source.galleryImages || []).map((img) => img.trim()).filter(Boolean);
     const dedupExtras = Array.from(new Set(extraImages)).filter((img) => img !== homeImage);
@@ -119,7 +125,7 @@ export default function Admin({ navigate }) {
       originalPrice,
       discount,
       rating: Math.round(rating * 10) / 10,
-      reviewCount: existing?.reviewCount ?? 0,
+      reviewCount,
       image: homeImage,
       detailImage,
       gallery: allImages,
@@ -234,6 +240,10 @@ export default function Admin({ navigate }) {
     if (form.rating === "" || isNaN(rating) || rating < 0 || rating > 5) {
       return "Rating must be a number between 0 and 5.";
     }
+    const reviewCount = Number(form.reviewCount);
+    if (form.reviewCount === "" || isNaN(reviewCount) || reviewCount < 0 || !Number.isInteger(reviewCount)) {
+      return "Review count must be a whole number of 0 or more.";
+    }
     return "";
   };
 
@@ -285,6 +295,7 @@ export default function Admin({ navigate }) {
       price: String(product.price || ""),
       originalPrice: String(product.originalPrice || product.price || ""),
       rating: String(product.rating ?? "4.5"),
+      reviewCount: String(product.reviewCount ?? 0),
       image: product.image || "",
       galleryImages: (() => {
         const fromGallery = Array.isArray(product.gallery) ? product.gallery : [];
@@ -530,7 +541,7 @@ export default function Admin({ navigate }) {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-7 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-primary-light text-xs uppercase tracking-[0.2em] font-semibold">Admin Panel</p>
-            <h1 className="text-3xl font-bold mt-1">Nina Mart Dashboard</h1>
+            <h1 className="text-3xl font-bold mt-1">NinaMart Dashboard</h1>
             <p className="text-slate-300 text-sm mt-1">Manage catalogue, pricing, and visibility in one place.</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -714,28 +725,42 @@ export default function Admin({ navigate }) {
                   <input className={inputCls} type="number" min="1" value={form.originalPrice} onChange={(e) => handleChange("originalPrice", e.target.value)} placeholder="179900" />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rating (0–5)</label>
-                <div className="flex items-center gap-3 mt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rating (0–5)</label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <input
+                      className={inputCls}
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={form.rating}
+                      onChange={(e) => handleChange("rating", e.target.value)}
+                      placeholder="4.5"
+                    />
+                    <span className="text-amber-500 text-lg shrink-0" aria-hidden>
+                      {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(form.rating) || 0))))}
+                      <span className="text-slate-400 text-sm">
+                        {"☆".repeat(Math.max(0, 5 - Math.min(5, Math.round(Number(form.rating) || 0))))}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Review Count</label>
                   <input
-                    className={inputCls}
+                    className={`${inputCls} mt-1`}
                     type="number"
                     min="0"
-                    max="5"
-                    step="0.1"
-                    value={form.rating}
-                    onChange={(e) => handleChange("rating", e.target.value)}
-                    placeholder="4.5"
+                    step="1"
+                    value={form.reviewCount}
+                    onChange={(e) => handleChange("reviewCount", e.target.value)}
+                    placeholder="256"
                   />
-                  <span className="text-amber-500 text-lg shrink-0" aria-hidden>
-                    {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(form.rating) || 0))))}
-                    <span className="text-slate-400 text-sm">
-                      {"☆".repeat(Math.max(0, 5 - Math.min(5, Math.round(Number(form.rating) || 0))))}
-                    </span>
-                  </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Shown on product cards and detail pages.</p>
               </div>
+              <p className="text-xs text-slate-400 -mt-1">Rating and review count appear on product cards and detail pages.</p>
               <AdminImageField
                 label="Home Image"
                 value={form.image}
@@ -873,6 +898,7 @@ export default function Admin({ navigate }) {
                           </div>
                           <p className="text-xs text-slate-500">
                             {p.category} · Br {Number(p.price).toLocaleString()} · ★ {p.rating ?? "—"} ·{" "}
+                            {p.reviewCount ?? 0} reviews ·{" "}
                             {p.availability === "available" ? "In Stock" : "Out of Stock"}
                           </p>
                         </div>

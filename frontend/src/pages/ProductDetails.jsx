@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import FeatureStrip from "../components/FeatureStrip";
 import { PHONE, TELEGRAM } from "../data/products";
 import { fetchProducts } from "../api/products";
 import { parseProductDescription } from "../utils/parseProductDescription";
@@ -284,24 +285,7 @@ export default function ProductDetails({ productId, navigate }) {
               Power meets portability with this premium product, built for performance and all-day reliability.
             </p>
 
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Processor</p>
-                <p className="text-sm font-semibold text-slate-800">High Performance Chipset</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Storage</p>
-                <p className="text-sm font-semibold text-slate-800">1TB PCIe 4.0 SSD</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Memory</p>
-                <p className="text-sm font-semibold text-slate-800">16GB LPDDR5</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-[11px] text-slate-400 uppercase">Display</p>
-                <p className="text-sm font-semibold text-slate-800">14 inch OLED</p>
-              </div>
-            </div>
+            <FeatureStrip embedded />
 
             <div className="mb-6">
               <p className="text-sm text-slate-600 mb-2">Color:</p>
@@ -325,8 +309,6 @@ export default function ProductDetails({ productId, navigate }) {
                 </a>
               </div>
             </div>
-
-            {/* <FeatureStrip /> */}
 
             {!available && (
               <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
