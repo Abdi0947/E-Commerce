@@ -7,7 +7,8 @@ const CATEGORY_ITEMS = [
   { key: "cameras", label: "Cameras", icon: "photo_camera" },
   { key: "speakers", label: "Speakers", icon: "speaker" },
   { key: "accessories", label: "Accessories", icon: "cable" },
-  { key: "more", label: "More", icon: "more_horiz" },
+  { key: "light and light stand", label: "light and light stand", icon: "light" },
+  { key: "more", label: "others", icon: "more" },
 ];
 
 export default function CategoryStrip({ activeCategory, onSelect }) {

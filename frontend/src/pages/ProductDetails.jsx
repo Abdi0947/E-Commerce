@@ -305,7 +305,7 @@ export default function ProductDetails({ productId, navigate }) {
                 </a>
                 <a href={TELEGRAM} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-200 p-3 hover:border-primary">
                   <p className="text-slate-400">Telegram</p>
-                  <p className="font-semibold text-slate-900">@ElectroHub_Support</p>
+                  <p className="font-semibold text-slate-900">@Mamaa234</p>
                 </a>
               </div>
             </div>
