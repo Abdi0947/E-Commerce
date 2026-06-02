@@ -180,6 +180,8 @@ export const categories = [
   "cameras",
   "speakers",
   "accessories",
+  "light",
+  "other"
 ];
 
 export const PHONE = "+251980164320";
