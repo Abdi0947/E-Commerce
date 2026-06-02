@@ -1,6 +1,5 @@
 const FEATURES = [
   { icon: "local_shipping", title: "Free Shipping", subtitle: "Orders now shipped for free" },
-  { icon: "verified_user", title: "1 Year Warranty", subtitle: "On all products" },
   { icon: "sell", title: "Best Price", subtitle: "Guaranteed" },
   { icon: "support_agent", title: "24/7 Support", subtitle: "We're here to help" },
 ];

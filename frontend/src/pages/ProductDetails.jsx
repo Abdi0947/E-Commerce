@@ -1,9 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import FeatureStrip from "../components/FeatureStrip";
 import { PHONE, TELEGRAM } from "../data/products";
 import { fetchProducts } from "../api/products";
 import { parseProductDescription } from "../utils/parseProductDescription";
 
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.2;
+const DEFAULT_ZOOM = 0.6;
 
 export default function ProductDetails({ productId, navigate }) {
   const [product, setProduct] = useState(null);
@@ -11,7 +16,7 @@ export default function ProductDetails({ productId, navigate }) {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,8 +48,8 @@ export default function ProductDetails({ productId, navigate }) {
       if (e.key === "Escape") setIsLightboxOpen(false);
       if (e.key === "ArrowLeft") prevImage();
       if (e.key === "ArrowRight") nextImage();
-      if (e.key === "+") setZoomLevel((z) => Math.min(3, +(z + 0.2).toFixed(1)));
-      if (e.key === "-") setZoomLevel((z) => Math.max(1, +(z - 0.2).toFixed(1)));
+      if (e.key === "+") setZoomLevel((z) => Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(1)));
+      if (e.key === "-") setZoomLevel((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(1)));
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -101,12 +106,12 @@ export default function ProductDetails({ productId, navigate }) {
           : "max-h-[260px] sm:max-h-[320px] object-contain";
   const openLightbox = (idx) => {
     setSelectedImage(idx);
-    setZoomLevel(1);
+    setZoomLevel(DEFAULT_ZOOM);
     setIsLightboxOpen(true);
   };
-  const zoomIn = () => setZoomLevel((z) => Math.min(3, +(z + 0.2).toFixed(1)));
-  const zoomOut = () => setZoomLevel((z) => Math.max(1, +(z - 0.2).toFixed(1)));
-  const resetZoom = () => setZoomLevel(1);
+  const zoomIn = () => setZoomLevel((z) => Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(1)));
+  const zoomOut = () => setZoomLevel((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(1)));
+  const resetZoom = () => setZoomLevel(DEFAULT_ZOOM);
 
   if (loading) {
     return (
@@ -305,7 +310,7 @@ export default function ProductDetails({ productId, navigate }) {
                 </a>
                 <a href={TELEGRAM} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-200 p-3 hover:border-primary">
                   <p className="text-slate-400">Telegram</p>
-                  <p className="font-semibold text-slate-900">@ElectroHub_Support</p>
+                  <p className="font-semibold text-slate-900">@Mamaa234</p>
                 </a>
               </div>
             </div>
@@ -362,66 +367,100 @@ export default function ProductDetails({ productId, navigate }) {
         )}
       </div>
 
-      {isLightboxOpen && (
-        <div
-          className="fixed inset-0 z-[2000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsLightboxOpen(false);
-            }}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white border border-white/20"
-            aria-label="Close image modal"
-          >
-            ✕
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              prevImage();
-            }}
-            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white border border-white/20"
-            aria-label="Previous image"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              nextImage();
-            }}
-            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white border border-white/20"
-            aria-label="Next image"
-          >
-            ›
-          </button>
-
+      {isLightboxOpen &&
+        createPortal(
           <div
-            className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 py-2"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm"
+            onClick={() => setIsLightboxOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Product image preview"
           >
-            <button type="button" onClick={zoomOut} className="w-8 h-8 rounded-full bg-white/10 text-white">−</button>
-            <span className="text-white text-sm min-w-[52px] text-center">{Math.round(zoomLevel * 100)}%</span>
-            <button type="button" onClick={zoomIn} className="w-8 h-8 rounded-full bg-white/10 text-white">+</button>
-            <button type="button" onClick={resetZoom} className="px-3 h-8 rounded-full bg-white/10 text-white text-xs">Reset</button>
-          </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLightboxOpen(false);
+              }}
+              className="fixed top-4 right-4 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-lg transition-all hover:bg-white/[0.18] hover:border-white/40"
+              aria-label="Close image modal"
+            >
+              ✕
+            </button>
 
-          <div className="max-w-[92vw] max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={activeImage?.src}
-              alt={`${product.name} preview`}
-              className="max-w-full max-h-[85vh] object-contain transition-transform duration-200"
-              style={{ transform: `scale(${zoomLevel})` }}
-            />
-          </div>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
+              className="fixed left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-[18px] transition-all hover:bg-white/[0.18] hover:border-white/40"
+              aria-label="Previous image"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
+              className="fixed right-4 sm:right-8 top-1/2 -translate-y-1/2 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-[18px] transition-all hover:bg-white/[0.18] hover:border-white/40"
+              aria-label="Next image"
+            >
+              ›
+            </button>
+
+            <div
+              className="fixed inset-x-0 top-16 bottom-24 z-[10000] flex items-center justify-center px-4 pointer-events-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={activeImage?.src}
+                alt={`${product.name} preview`}
+                className="pointer-events-auto max-w-full max-h-full object-contain transition-transform duration-200"
+                style={{ transform: `scale(${zoomLevel})` }}
+              />
+            </div>
+
+            <div
+              className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-white/[0.1] backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+              onClick={(e) => e.stopPropagation()}
+              role="toolbar"
+              aria-label="Zoom controls"
+            >
+              <button
+                type="button"
+                onClick={zoomOut}
+                className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
+                disabled={zoomLevel <= MIN_ZOOM}
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <span className="text-white text-sm min-w-[52px] text-center font-medium tabular-nums">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
+                disabled={zoomLevel >= MAX_ZOOM}
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="px-3 h-8 rounded-full bg-white/10 text-white text-xs font-medium transition-all hover:bg-white/[0.18]"
+              >
+                Reset
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </main>
   );
 }

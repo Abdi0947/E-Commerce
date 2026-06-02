@@ -54,8 +54,3 @@ CREATE TABLE IF NOT EXISTS product_view_stats (
   last_viewed_at TIMESTAMP NULL,
   CONSTRAINT fk_product_views_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 );
-
-USE ninamart;
-
-ALTER TABLE products
-  ADD COLUMN IF NOT EXISTS is_visible TINYINT(1) NOT NULL DEFAULT 1 AFTER best_seller;

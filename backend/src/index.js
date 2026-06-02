@@ -15,12 +15,12 @@ dotenv.config();
 const app = express();
 
 app.use(helmet());
-app.use(
-  cors({
-    origin: config.frontendUrl,
-    credentials: true,
-  }),
-);
+// app.use(
+//   cors({
+//     origin: config.frontendUrl,
+//     credentials: true,
+//   }),
+// );
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_req, res) => {

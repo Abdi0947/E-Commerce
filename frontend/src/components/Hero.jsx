@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
 const HERO_IMAGE   = "/uploads/1780321273021-hero.png";
-const HERO_IMAGE_2 = "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=900&auto=format&fit=crop&q=80";
-const HERO_IMAGE_3 = "https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=900&auto=format&fit=crop&q=80";
+const HERO_IMAGE_2 = "/uploads/banner2.jpg";
+const HERO_IMAGE_3 = "/uploads/banner1.jpg";
 
 const slides = [
   {
@@ -55,7 +55,7 @@ export default function Hero({ navigate }) {
   return (
     <section className="bg-[#f8fafc] py-3 sm:py-4" aria-label="Featured promotions">
       <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[14px] h-[300px] sm:h-[350px] select-none border border-slate-200/60">
+        <div className="relative overflow-hidden rounded-[14px] h-[380px] md:h-[350px] select-none border border-slate-200/60">
       {slides.map((slide, i) => (
         <div
           key={i}
@@ -63,29 +63,54 @@ export default function Hero({ navigate }) {
             active === i ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
         >
-          {/* Background gradient */}
-          <div className="absolute inset-0" style={{ background: slide.bg }} />
+          {/* Mobile: product image as full-bleed background */}
           <div
-            className="absolute inset-0 z-[1]"
+            className="absolute inset-0 md:hidden bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${slide.image})` }}
+            role="img"
+            aria-label={`${slide.title} ${slide.accent}`}
+          />
+          <div
+            className="absolute inset-0 z-[1] md:hidden"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(15,23,42,0.94) 0%, rgba(15,23,42,0.78) 32%, rgba(30,27,75,0.45) 58%, rgba(30,27,75,0.2) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 z-[1] md:hidden opacity-90"
+            style={{
+              background: `radial-gradient(ellipse 80% 60% at 20% 18%, ${slide.glow} 0%, transparent 50%)`,
+            }}
+          />
+
+          {/* Tablet/desktop: gradient background (unchanged) */}
+          <div className="absolute inset-0 hidden md:block" style={{ background: slide.bg }} />
+          <div
+            className="absolute inset-0 z-[1] hidden md:block"
             style={{ background: `radial-gradient(ellipse 60% 80% at 65% 50%, ${slide.glow} 0%, transparent 70%)` }}
           />
 
           {/* Slide content */}
-          <div className="w-full h-full px-6 sm:px-10 md:px-16 flex items-center justify-between relative z-[2]">
-            <div className={`max-w-[480px] ${active === i ? "animate-slide-up" : "opacity-0"}`}>
-              <span className="inline-block bg-primary text-white text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-[18px]">
+          <div className="w-full h-full px-5 sm:px-10 md:px-16 pt-7 pb-12 md:pt-0 md:pb-0 flex items-start md:items-center justify-between relative z-[2]">
+            <div
+              className={`max-w-[480px] w-full md:w-auto ${
+                active === i ? "animate-slide-up" : "opacity-0"
+              } max-md:[text-shadow:0_2px_16px_rgba(0,0,0,0.45)]`}
+            >
+              <span className="inline-block bg-primary/95 backdrop-blur-sm text-white text-[10px] sm:text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-3 md:mb-[18px] shadow-lg">
                 {slide.badge}
               </span>
-              <h1 className="text-[32px] sm:text-[40px] lg:text-[48px] font-extrabold text-white leading-[1.05] tracking-[-1.2px] sm:tracking-[-1.5px] mb-3 sm:mb-4">
+              <h1 className="text-[26px] sm:text-[40px] lg:text-[48px] font-extrabold text-white leading-[1.08] tracking-[-0.8px] sm:tracking-[-1.5px] mb-2 sm:mb-4">
                 {slide.title}
                 <br />
                 <span className="text-primary-light">{slide.accent}</span>
               </h1>
-              <p className="text-[14px] sm:text-[16px] lg:text-[18px] text-slate-300 leading-relaxed mb-5 sm:mb-7 max-w-[380px]">
+              <p className="text-[13px] sm:text-[16px] lg:text-[18px] text-slate-200 md:text-slate-300 leading-relaxed mb-4 sm:mb-7 max-w-[340px] sm:max-w-[380px]">
                 {slide.subtitle}
               </p>
               <button
-                className="inline-flex items-center gap-2 bg-primary text-white px-5 sm:px-7 py-[10px] sm:py-[12px] rounded-[10px] text-[14px] sm:text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(79,70,229,0.4)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(79,70,229,0.5)]"
+                className="inline-flex items-center gap-2 bg-primary text-white px-5 sm:px-7 py-[10px] sm:py-[12px] rounded-[10px] text-[14px] sm:text-[15px] font-semibold border-none cursor-pointer transition-all shadow-[0_4px_14px_rgba(79,70,229,0.5)] hover:bg-primary-dark hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(79,70,229,0.5)] max-md:shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
                 onClick={() => navigate("home", slide.scrollTo || "categories")}
                 id={`hero-cta-${i}`}
               >

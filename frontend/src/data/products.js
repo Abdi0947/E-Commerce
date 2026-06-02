@@ -180,11 +180,21 @@ export const categories = [
   "cameras",
   "speakers",
   "accessories",
+  "light",
+  "other"
 ];
 
-export const PHONE = "+251947526347";
-export const FACEBOOK = "https://www.facebook.com/";
-export const INSTAGRAM = "https://www.instagram.com/";
-export const TELEGRAM = "https://t.me/ElectroHub_Support";
+export const PHONE = "+251980164320";
+export const FACEBOOK = "https://www.facebook.com/beti.kebede.589";
+export const INSTAGRAM = "https://www.instagram.com/hamz_aa1994?igsh=MTc2eGE0Z2Nra2dubg==";
+export const TELEGRAM = "https://t.me/Mamaa234";
+
+export const STORE_LOCATION_TITLE =
+  "Mishkat Commercial Center | Merkato | ሚሽካት የንግድ ማዕከል | መርካቶ";
+export const STORE_ADDRESS_DETAIL =
+  "Merkato around Anwar Mosque, Mishkat Mall, 2nd floor — Addis Ababa, Ethiopia";
+export const MAPS_URL = "https://maps.app.goo.gl/r82iBekmjopfEQSe9?g_st=atm";
+export const MAP_EMBED_URL =
+  "https://www.google.com/maps?q=Mishkat+Commercial+Center+Merkato+Addis+Ababa+Ethiopia&hl=en&z=17&output=embed";
 
 export default products;
