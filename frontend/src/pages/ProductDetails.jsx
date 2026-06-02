@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import FeatureStrip from "../components/FeatureStrip";
 import { PHONE, TELEGRAM } from "../data/products";
 import { fetchProducts } from "../api/products";
@@ -366,61 +367,26 @@ export default function ProductDetails({ productId, navigate }) {
         )}
       </div>
 
-      {isLightboxOpen && (
-        <div
-          className="fixed inset-0 z-[2000] bg-black/90 backdrop-blur-sm"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          {/* Image layer (behind controls) */}
-          <div className="absolute inset-0 z-0 flex items-center justify-center p-4 pt-24 pb-8">
-            <div
-              className="max-w-[92vw] max-h-[calc(85vh-5rem)] flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={activeImage?.src}
-                alt={`${product.name} preview`}
-                className="max-w-full max-h-[calc(85vh-5rem)] object-contain transition-transform duration-200"
-                style={{ transform: `scale(${zoomLevel})` }}
-              />
-            </div>
-          </div>
-
-          {/* Controls layer (always above image) */}
-          <div className="absolute inset-0 z-10 pointer-events-none">
+      {isLightboxOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm"
+            onClick={() => setIsLightboxOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Product image preview"
+          >
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsLightboxOpen(false);
               }}
-              className="pointer-events-auto absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm text-white border border-white/25 shadow-lg"
+              className="fixed top-4 right-4 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-lg transition-all hover:bg-white/[0.18] hover:border-white/40"
               aria-label="Close image modal"
             >
               ✕
             </button>
-
-            <div
-              className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/55 backdrop-blur-md border border-white/25 rounded-full px-3 py-2 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button type="button" onClick={zoomOut} className="w-8 h-8 rounded-full bg-white/15 text-white hover:bg-white/25">
-                −
-              </button>
-              <span className="text-white text-sm min-w-[52px] text-center font-medium">
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button type="button" onClick={zoomIn} className="w-8 h-8 rounded-full bg-white/15 text-white hover:bg-white/25">
-                +
-              </button>
-              <button
-                type="button"
-                onClick={resetZoom}
-                className="px-3 h-8 rounded-full bg-white/15 text-white text-xs hover:bg-white/25"
-              >
-                Reset
-              </button>
-            </div>
 
             <button
               type="button"
@@ -428,7 +394,7 @@ export default function ProductDetails({ productId, navigate }) {
                 e.stopPropagation();
                 prevImage();
               }}
-              className="pointer-events-auto absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm text-white border border-white/25 shadow-lg"
+              className="fixed left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-[18px] transition-all hover:bg-white/[0.18] hover:border-white/40"
               aria-label="Previous image"
             >
               ‹
@@ -439,14 +405,62 @@ export default function ProductDetails({ productId, navigate }) {
                 e.stopPropagation();
                 nextImage();
               }}
-              className="pointer-events-auto absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm text-white border border-white/25 shadow-lg"
+              className="fixed right-4 sm:right-8 top-1/2 -translate-y-1/2 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-[18px] transition-all hover:bg-white/[0.18] hover:border-white/40"
               aria-label="Next image"
             >
               ›
             </button>
-          </div>
-        </div>
-      )}
+
+            <div
+              className="fixed inset-x-0 top-16 bottom-24 z-[10000] flex items-center justify-center px-4 pointer-events-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={activeImage?.src}
+                alt={`${product.name} preview`}
+                className="pointer-events-auto max-w-full max-h-full object-contain transition-transform duration-200"
+                style={{ transform: `scale(${zoomLevel})` }}
+              />
+            </div>
+
+            <div
+              className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-white/[0.1] backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+              onClick={(e) => e.stopPropagation()}
+              role="toolbar"
+              aria-label="Zoom controls"
+            >
+              <button
+                type="button"
+                onClick={zoomOut}
+                className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
+                disabled={zoomLevel <= MIN_ZOOM}
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <span className="text-white text-sm min-w-[52px] text-center font-medium tabular-nums">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
+                disabled={zoomLevel >= MAX_ZOOM}
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="px-3 h-8 rounded-full bg-white/10 text-white text-xs font-medium transition-all hover:bg-white/[0.18]"
+              >
+                Reset
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </main>
   );
 }
