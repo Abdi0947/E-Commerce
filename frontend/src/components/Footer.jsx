@@ -26,7 +26,7 @@ const socialLinks = [
     className: "footer-social-link footer-social-link--instagram",
   },
   {
-    href: "https://t.me/@Mamaa234",
+    href: "https://t.me/Mamaa234",
     label: "Telegram",
     icon: "send",
     className: "footer-social-link footer-social-link--telegram",
