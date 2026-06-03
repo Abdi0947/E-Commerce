@@ -30,10 +30,10 @@ export async function createProduct(body) {
   const [result] = await pool.execute(
     `INSERT INTO products (
       name, category, price, original_price, discount, rating, review_count,
-      image, detail_image, gallery, availability, description, featured, popular, best_seller, is_visible
+      image, detail_image, gallery, review_video, availability, description, featured, popular, best_seller, is_visible
     ) VALUES (
       :name, :category, :price, :original_price, :discount, :rating, :review_count,
-      :image, :detail_image, :gallery, :availability, :description, :featured, :popular, :best_seller, :is_visible
+      :image, :detail_image, :gallery, :review_video, :availability, :description, :featured, :popular, :best_seller, :is_visible
     )`,
     fields,
   );
@@ -53,7 +53,7 @@ export async function updateProduct(id, body) {
     `UPDATE products SET
       name = :name, category = :category, price = :price, original_price = :original_price,
       discount = :discount, rating = :rating, review_count = :review_count,
-      image = :image, detail_image = :detail_image, gallery = :gallery,
+      image = :image, detail_image = :detail_image, gallery = :gallery, review_video = :review_video,
       availability = :availability, description = :description,
       featured = :featured, popular = :popular, best_seller = :best_seller,
       is_visible = :is_visible

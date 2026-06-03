@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS products (
   image TEXT NOT NULL,
   detail_image TEXT,
   gallery JSON,
+  review_video TEXT NULL,
   availability ENUM('available', 'out_of_stock') NOT NULL DEFAULT 'available',
   description TEXT NOT NULL,
   featured TINYINT(1) NOT NULL DEFAULT 0,

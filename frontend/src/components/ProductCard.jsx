@@ -1,3 +1,5 @@
+import { resolveMediaUrl } from "../utils/resolveMediaUrl";
+
 export default function ProductCard({ product, navigate, index = 0 }) {
   const available = product.availability === "available";
   const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
@@ -11,7 +13,7 @@ export default function ProductCard({ product, navigate, index = 0 }) {
     >
       <div className="relative h-[176px]  overflow-hidden flex items-center justify-center p-3">
         <img
-          src={product.image}
+          src={resolveMediaUrl(product.image)}
           alt={product.name}
           className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.06]"
           loading="lazy"

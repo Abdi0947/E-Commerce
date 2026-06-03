@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const uploadsDir = path.resolve(__dirname, "../../frontend/public/uploads");
+export const uploadsDir = path.resolve(__dirname, "../frontend/public/uploads");
 
 export const config = {
   port: Number(process.env.PORT) || 3001,

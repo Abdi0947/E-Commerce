@@ -1,7 +1,7 @@
 import express from "express";
-import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config.js";
+import { uploadsStatic } from "./utils/uploadsStatic.js";
 import { pool, query } from "./db/pool.js";
 import authRoutes, { ensureAdminUser } from "./routes/auth.routes.js";
 import productsRoutes from "./routes/products.routes.js";
@@ -15,7 +15,17 @@ dotenv.config();
 
 const app = express();
 
-app.use(helmet());
+app.use("/uploads", uploadsStatic);
+app.use("/uploads", (_req, res, next) => {
+  if (res.headersSent) return next();
+  res.status(404).send("File not found");
+});
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 // app.use(
 //   cors({
 //     origin: config.frontendUrl,
@@ -35,6 +45,10 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/uploads", uploadRoutes);
 
 app.use((err, _req, res, _next) => {
+  const status = err.status ?? err.statusCode;
+  if (status === 404) {
+    return res.status(404).send("Not found");
+  }
   console.error(err);
   res.status(500).json({ error: "Internal server error." });
 });
@@ -45,6 +59,13 @@ async function ensureProductSchema() {
       "ALTER TABLE products ADD COLUMN is_visible TINYINT(1) NOT NULL DEFAULT 1 AFTER best_seller",
     );
     console.log("Added products.is_visible column.");
+  } catch (err) {
+    if (err.code !== "ER_DUP_FIELDNAME") throw err;
+  }
+
+  try {
+    await query("ALTER TABLE products ADD COLUMN review_video TEXT NULL AFTER gallery");
+    console.log("Added products.review_video column.");
   } catch (err) {
     if (err.code !== "ER_DUP_FIELDNAME") throw err;
   }

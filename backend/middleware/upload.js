@@ -32,3 +32,17 @@ export const uploadImage = multer({
   fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 });
+
+const videoFilter = (_req, file, cb) => {
+  if (file.mimetype?.startsWith("video/")) {
+    cb(null, true);
+    return;
+  }
+  cb(new Error("Only video files are allowed."));
+};
+
+export const uploadVideo = multer({
+  storage,
+  fileFilter: videoFilter,
+  limits: { fileSize: 50 * 1024 * 1024 },
+});

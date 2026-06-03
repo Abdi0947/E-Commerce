@@ -51,7 +51,7 @@ export async function deleteLocalUpload(url) {
 export function collectProductImageUrls(product) {
   if (!product) return [];
   const urls = new Set();
-  for (const url of [product.image, product.detailImage]) {
+  for (const url of [product.image, product.detailImage, product.reviewVideo]) {
     if (url) urls.add(url);
   }
   if (Array.isArray(product.gallery)) {

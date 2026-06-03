@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { resolveMediaUrl } from "../utils/resolveMediaUrl";
 
-const HERO_IMAGE   = "/uploads/1780321273021-hero.png";
-const HERO_IMAGE_2 = "/uploads/banner2.jpg";
-const HERO_IMAGE_3 = "/uploads/banner1.jpg";
+const HERO_IMAGE = resolveMediaUrl("/uploads/1780321273021-hero.png");
+const HERO_IMAGE_2 = resolveMediaUrl("/uploads/banner2.jpg");
+const HERO_IMAGE_3 = resolveMediaUrl("/uploads/banner1.jpg");
 
 const slides = [
   {

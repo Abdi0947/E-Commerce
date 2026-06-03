@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { categories } from "../data/products";
 import * as authApi from "../api/auth.js";
 import * as productsApi from "../api/products.js";
-import { uploadProductImage } from "../api/uploads.js";
+import { uploadProductImage, uploadProductVideo } from "../api/uploads.js";
 import { getAnalyticsSummary, getProductViewsSorted, resetAnalytics } from "../utils/analytics";
 import { getToken } from "../api/client.js";
 import { DESCRIPTION_SEPARATOR } from "../utils/parseProductDescription";
@@ -16,6 +16,7 @@ const emptyForm = {
   reviewCount: "0",
   image: "",
   galleryImages: [""],
+  reviewVideo: "",
   availability: "available",
   description: "",
   featured: false,
@@ -129,6 +130,7 @@ export default function Admin({ navigate }) {
       image: homeImage,
       detailImage,
       gallery: allImages,
+      reviewVideo: (source.reviewVideo || "").trim(),
       availability: source.availability,
       description: source.description.trim(),
       featured: !!source.featured,
@@ -224,6 +226,24 @@ export default function Admin({ navigate }) {
     }
   };
 
+  const handleVideoFileUpload = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setFormError("Please select a valid video file (MP4, WebM, or MOV).");
+      return;
+    }
+    setFormError("");
+    setUploadingField("reviewVideo");
+    try {
+      const { url } = await uploadProductVideo(file);
+      handleChange("reviewVideo", url);
+    } catch (err) {
+      setFormError(err.message || "Video upload failed.");
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const validateForm = () => {
     if (!form.name.trim()) return "Product name is required.";
     if (!form.description.trim()) return "Description is required.";
@@ -309,6 +329,7 @@ export default function Admin({ navigate }) {
       featured: !!product.featured,
       popular: !!product.popular,
       bestSeller: !!product.bestSeller,
+      reviewVideo: product.reviewVideo || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -800,6 +821,14 @@ export default function Admin({ navigate }) {
                   </button>
                 </div>
               </div>
+              <AdminVideoField
+                label="Video Review"
+                value={form.reviewVideo}
+                onChange={(url) => handleChange("reviewVideo", url)}
+                onUpload={handleVideoFileUpload}
+                uploading={uploadingField === "reviewVideo"}
+                inputCls={inputCls}
+              />
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Description</label>
                 <textarea
@@ -985,6 +1014,43 @@ export default function Admin({ navigate }) {
         </section>
       </div>
     </main>
+  );
+}
+
+function AdminVideoField({ label, value, onChange, onUpload, uploading, inputCls }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
+      <p className="text-xs text-slate-400 mt-1 mb-3">
+        Upload MP4 (recommended) or WebM, or paste a YouTube link. MP4 works in all browsers; MOV may not play on some devices.
+      </p>
+      {value && (
+        <p className="text-xs text-slate-600 mb-3 break-all rounded-lg bg-white border border-slate-200 px-3 py-2">
+          {value}
+        </p>
+      )}
+      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/30 bg-white text-primary text-sm font-semibold cursor-pointer hover:bg-primary/5 mb-2">
+        <span className="material-symbols-outlined text-base leading-none">videocam</span>
+        {uploading ? "Uploading…" : "Upload video"}
+        <input
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          className="sr-only"
+          disabled={uploading}
+          onChange={(e) => {
+            onUpload(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      <input
+        className={inputCls}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Or paste video URL (/uploads/… or YouTube link)"
+        disabled={uploading}
+      />
+    </div>
   );
 }
 

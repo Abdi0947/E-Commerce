@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import FeatureStrip from "../components/FeatureStrip";
 import { PHONE, TELEGRAM } from "../data/products";
 import { fetchProducts } from "../api/products";
 import { parseProductDescription } from "../utils/parseProductDescription";
+import { parseReviewVideo, isVideoGalleryItem } from "../utils/parseReviewVideo";
+import { resolveMediaUrl, videoMimeFromUrl } from "../utils/resolveMediaUrl";
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3;
@@ -17,6 +19,10 @@ export default function ProductDetails({ productId, navigate }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const lightboxVideoRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,19 +48,6 @@ export default function ProductDetails({ productId, navigate }) {
     };
   }, [productId]);
 
-  useEffect(() => {
-    if (!isLightboxOpen) return;
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setIsLightboxOpen(false);
-      if (e.key === "ArrowLeft") prevImage();
-      if (e.key === "ArrowRight") nextImage();
-      if (e.key === "+") setZoomLevel((z) => Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(1)));
-      if (e.key === "-") setZoomLevel((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(1)));
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isLightboxOpen]);
-
   const available = product?.availability === "available";
   const tgMsg = product
     ? `Hi! I want to order: ${product.name} (Br ${product.price.toLocaleString()})`
@@ -70,14 +63,33 @@ export default function ProductDetails({ productId, navigate }) {
       ),
     );
     const safeGallery = gallery.length > 0 ? gallery : [product.image];
-    return safeGallery.length > 1
-      ? safeGallery.map((src) => ({ src, variant: "default" }))
-      : [
-          { src: safeGallery[0], variant: "default" },
-          { src: safeGallery[0], variant: "left" },
-          { src: safeGallery[0], variant: "right" },
-          { src: safeGallery[0], variant: "zoom" },
-        ];
+    let items =
+      safeGallery.length > 1
+        ? safeGallery.map((src) => ({ type: "image", src: resolveMediaUrl(src), variant: "default" }))
+        : [
+            { type: "image", src: resolveMediaUrl(safeGallery[0]), variant: "default" },
+            { type: "image", src: resolveMediaUrl(safeGallery[0]), variant: "left" },
+            { type: "image", src: resolveMediaUrl(safeGallery[0]), variant: "right" },
+            { type: "image", src: resolveMediaUrl(safeGallery[0]), variant: "zoom" },
+          ];
+
+    const reviewVideo = parseReviewVideo(product.reviewVideo);
+    if (reviewVideo) {
+      items = [
+        ...items,
+        {
+          type: "video",
+          src: reviewVideo.src,
+          playbackSrc: reviewVideo.playbackSrc,
+          mimeType: reviewVideo.mimeType,
+          embedUrl: reviewVideo.embedUrl,
+          videoKind: reviewVideo.kind,
+          poster: resolveMediaUrl(product.image),
+          label: "Video review",
+        },
+      ];
+    }
+    return items;
   }, [product]);
   const related = product
     ? products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4)
@@ -89,29 +101,101 @@ export default function ProductDetails({ productId, navigate }) {
   const prevImage = () =>
     setSelectedImage((prev) => (prev - 1 + interactiveGallery.length) % interactiveGallery.length);
   const nextImage = () => setSelectedImage((prev) => (prev + 1) % interactiveGallery.length);
+
+  const pauseLightboxVideo = useCallback(() => {
+    const el = lightboxVideoRef.current;
+    if (el && !el.paused) {
+      el.pause();
+    }
+    setVideoPlaying(false);
+  }, []);
+
   useEffect(() => {
     if (selectedImage >= interactiveGallery.length) {
       setSelectedImage(0);
     }
   }, [interactiveGallery, selectedImage]);
 
-  const activeImage = interactiveGallery[selectedImage] || interactiveGallery[0];
+  useEffect(() => {
+    pauseLightboxVideo();
+    setVideoError(false);
+    if (!isVideoGalleryItem(interactiveGallery[selectedImage])) {
+      setVideoPlaying(false);
+    }
+  }, [selectedImage, interactiveGallery, pauseLightboxVideo]);
+
+  useEffect(() => {
+    if (!isLightboxOpen) {
+      pauseLightboxVideo();
+    }
+  }, [isLightboxOpen, pauseLightboxVideo]);
+
+  const activeMedia = interactiveGallery[selectedImage] || interactiveGallery[0];
+  const isActiveVideo = isVideoGalleryItem(activeMedia);
+  const activeVideoSrc = isActiveVideo
+    ? activeMedia.playbackSrc || resolveMediaUrl(activeMedia.src)
+    : "";
+  const activeVideoMime = isActiveVideo
+    ? activeMedia.mimeType || videoMimeFromUrl(activeVideoSrc)
+    : "";
   const activeImgClass =
-    activeImage?.variant === "left"
+    activeMedia?.variant === "left"
       ? "max-h-[260px] sm:max-h-[320px] object-contain -translate-x-3"
-      : activeImage?.variant === "right"
+      : activeMedia?.variant === "right"
         ? "max-h-[260px] sm:max-h-[320px] object-contain translate-x-3"
-        : activeImage?.variant === "zoom"
+        : activeMedia?.variant === "zoom"
           ? "max-h-[260px] sm:max-h-[320px] object-contain scale-110"
           : "max-h-[260px] sm:max-h-[320px] object-contain";
   const openLightbox = (idx) => {
     setSelectedImage(idx);
     setZoomLevel(DEFAULT_ZOOM);
+    setVideoPlaying(false);
+    setVideoMuted(false);
     setIsLightboxOpen(true);
+  };
+  const closeLightbox = () => {
+    pauseLightboxVideo();
+    setIsLightboxOpen(false);
   };
   const zoomIn = () => setZoomLevel((z) => Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(1)));
   const zoomOut = () => setZoomLevel((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(1)));
   const resetZoom = () => setZoomLevel(DEFAULT_ZOOM);
+  const toggleVideoPlay = () => {
+    const el = lightboxVideoRef.current;
+    if (!el) return;
+    if (el.paused) {
+      el.play();
+      setVideoPlaying(true);
+    } else {
+      el.pause();
+      setVideoPlaying(false);
+    }
+  };
+  const toggleVideoMute = () => {
+    const el = lightboxVideoRef.current;
+    if (!el) return;
+    el.muted = !el.muted;
+    setVideoMuted(el.muted);
+  };
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") prevImage();
+      if (e.key === "ArrowRight") nextImage();
+      if (!isActiveVideo) {
+        if (e.key === "+") setZoomLevel((z) => Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(1)));
+        if (e.key === "-") setZoomLevel((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(1)));
+      }
+      if (isActiveVideo && activeMedia?.videoKind === "file" && e.key === " ") {
+        e.preventDefault();
+        toggleVideoPlay();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isLightboxOpen, isActiveVideo, activeMedia?.videoKind, closeLightbox, prevImage, nextImage, toggleVideoPlay]);
 
   useEffect(() => {
     // Basic dynamic SEO for crawlers that execute JS.
@@ -200,58 +284,121 @@ export default function ProductDetails({ productId, navigate }) {
               <button
                 type="button"
                 onClick={() => openLightbox(selectedImage)}
-                className="absolute top-4 right-4 w-9 h-9 rounded-full border border-slate-200 bg-white"
-                aria-label="Open image in full view"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full border border-slate-200 bg-white z-[2]"
+                aria-label={isActiveVideo ? "Open video in full view" : "Open image in full view"}
               >
                 ↗
               </button>
               <button
                 type="button"
                 onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-slate-200"
-                aria-label="Previous image"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-slate-200 z-[2]"
+                aria-label="Previous item"
               >
                 ‹
               </button>
               <button
                 type="button"
                 onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-slate-200"
-                aria-label="Next image"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-slate-200 z-[2]"
+                aria-label="Next item"
               >
                 ›
               </button>
-              <img
-                src={activeImage?.src}
-                alt={product.name}
-                className={`${activeImgClass} cursor-zoom-in`}
-                onClick={() => openLightbox(selectedImage)}
-              />
+              {isActiveVideo ? (
+                <div
+                  className="w-full max-w-full cursor-pointer"
+                  onClick={() => openLightbox(selectedImage)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === "Enter" && openLightbox(selectedImage)}
+                  aria-label="Open video review in full view"
+                >
+                  {activeMedia.videoKind === "youtube" ? (
+                    <div className="relative w-full aspect-video max-h-[320px] rounded-lg overflow-hidden bg-black">
+                      <img
+                        src={activeMedia.poster}
+                        alt="Video review preview"
+                        className="absolute inset-0 w-full h-full object-cover opacity-80"
+                      />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/35">
+                        <span className="material-symbols-outlined text-white text-[56px] leading-none">
+                          play_circle
+                        </span>
+                        <span className="text-white text-sm font-semibold">Video review</span>
+                      </div>
+                    </div>
+                  ) : videoError ? (
+                    <div className="text-center text-slate-600 text-sm px-4 py-8">
+                      <p className="font-semibold mb-1">Video could not load</p>
+                      <p className="text-slate-500">Use MP4 (H.264) for best compatibility, then re-upload.</p>
+                    </div>
+                  ) : (
+                    <video
+                      key={activeVideoSrc}
+                      poster={activeMedia.poster}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="max-h-[260px] sm:max-h-[320px] w-full rounded-lg bg-black object-contain"
+                      onClick={(e) => e.stopPropagation()}
+                      onError={() => setVideoError(true)}
+                    >
+                      <source src={activeVideoSrc} type={activeVideoMime} />
+                    </video>
+                  )}
+                </div>
+              ) : (
+                <img
+                  src={activeMedia?.src}
+                  alt={product.name}
+                  className={`${activeImgClass} cursor-zoom-in`}
+                  onClick={() => openLightbox(selectedImage)}
+                />
+              )}
             </div>
 
             <div className="flex gap-3 mt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {interactiveGallery.map((item, idx) => (
                 <button
                   type="button"
-                  key={`${item.src}-${item.variant}-${idx}`}
-                  onClick={() => openLightbox(idx)}
-                  className={`h-[72px] w-[72px] shrink-0 rounded-md border p-2 bg-white ${
+                  key={`${item.type}-${item.src}-${item.variant || "video"}-${idx}`}
+                  onClick={() => {
+                    setSelectedImage(idx);
+                    openLightbox(idx);
+                  }}
+                  className={`relative h-[72px] w-[72px] shrink-0 rounded-md border p-2 bg-white ${
                     selectedImage === idx ? "border-primary" : "border-slate-200"
                   }`}
                 >
-                  <img
-                    src={item.src}
-                    alt={`${product.name} ${idx + 1}`}
-                    className={`w-full h-full object-contain ${
-                      item.variant === "left"
-                        ? "-translate-x-1"
-                        : item.variant === "right"
-                          ? "translate-x-1"
-                          : item.variant === "zoom"
-                            ? "scale-110"
-                            : ""
-                    }`}
-                  />
+                  {isVideoGalleryItem(item) ? (
+                    <>
+                      <img
+                        src={item.poster || resolveMediaUrl(product.image)}
+                        alt="Video review"
+                        className="w-full h-full object-cover rounded-sm"
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/35 rounded-sm">
+                        <span className="material-symbols-outlined text-white text-[28px] leading-none">
+                          play_circle
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <img
+                      src={item.src}
+                      alt={`${product.name} ${idx + 1}`}
+                      className={`w-full h-full object-contain ${
+                        item.variant === "left"
+                          ? "-translate-x-1"
+                          : item.variant === "right"
+                            ? "translate-x-1"
+                            : item.variant === "zoom"
+                              ? "scale-110"
+                              : ""
+                      }`}
+                    />
+                  )}
                 </button>
               ))}
             </div>
@@ -396,7 +543,7 @@ export default function ProductDetails({ productId, navigate }) {
                   onClick={() => navigate("product", null, item.id)}
                 >
                   <div className="relative bg-white border border-slate-200 rounded-xl overflow-hidden">
-                    <img src={item.image} alt={item.name} className="h-40 w-full object-contain p-3 bg-slate-50" />
+                    <img src={resolveMediaUrl(item.image)} alt={item.name} className="h-40 w-full object-contain p-3 bg-slate-50" />
                     {item.discount > 0 && (
                       <span className="absolute top-2 left-2 bg-primary text-white text-[11px] px-2 py-0.5 rounded">
                         -{item.discount}%
@@ -416,19 +563,19 @@ export default function ProductDetails({ productId, navigate }) {
         createPortal(
           <div
             className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm"
-            onClick={() => setIsLightboxOpen(false)}
+            onClick={closeLightbox}
             role="dialog"
             aria-modal="true"
-            aria-label="Product image preview"
+            aria-label={isActiveVideo ? "Product video preview" : "Product image preview"}
           >
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsLightboxOpen(false);
+                closeLightbox();
               }}
               className="fixed top-4 right-4 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-lg transition-all hover:bg-white/[0.18] hover:border-white/40"
-              aria-label="Close image modal"
+              aria-label="Close preview"
             >
               ✕
             </button>
@@ -440,7 +587,7 @@ export default function ProductDetails({ productId, navigate }) {
                 prevImage();
               }}
               className="fixed left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-[18px] transition-all hover:bg-white/[0.18] hover:border-white/40"
-              aria-label="Previous image"
+              aria-label="Previous item"
             >
               ‹
             </button>
@@ -451,7 +598,7 @@ export default function ProductDetails({ productId, navigate }) {
                 nextImage();
               }}
               className="fixed right-4 sm:right-8 top-1/2 -translate-y-1/2 z-[10001] w-10 h-10 rounded-full bg-white/[0.08] backdrop-blur-sm text-white border-[1.5px] border-white/20 flex items-center justify-center text-[18px] transition-all hover:bg-white/[0.18] hover:border-white/40"
-              aria-label="Next image"
+              aria-label="Next item"
             >
               ›
             </button>
@@ -460,49 +607,124 @@ export default function ProductDetails({ productId, navigate }) {
               className="fixed inset-x-0 top-16 bottom-24 z-[10000] flex items-center justify-center px-4 pointer-events-none"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={activeImage?.src}
-                alt={`${product.name} preview`}
-                className="pointer-events-auto max-w-full max-h-full object-contain transition-transform duration-200"
-                style={{ transform: `scale(${zoomLevel})` }}
-              />
+              {isActiveVideo ? (
+                activeMedia.videoKind === "youtube" ? (
+                  <iframe
+                    title={`${product.name} video review`}
+                    src={`${activeMedia.embedUrl}&autoplay=1`}
+                    className="pointer-events-auto w-full max-w-[960px] aspect-video rounded-xl bg-black shadow-2xl"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : videoError ? (
+                  <div className="pointer-events-auto text-center text-white px-6 py-10 max-w-md">
+                    <p className="font-semibold mb-2">Video could not load</p>
+                    <p className="text-sm text-white/70">
+                      Re-upload as MP4 (H.264). MOV files may not play in all browsers.
+                    </p>
+                  </div>
+                ) : (
+                  <video
+                    key={`lightbox-${activeVideoSrc}`}
+                    ref={lightboxVideoRef}
+                    poster={activeMedia.poster}
+                    className="pointer-events-auto max-w-full max-h-full rounded-xl bg-black object-contain"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    onPlay={() => setVideoPlaying(true)}
+                    onPause={() => setVideoPlaying(false)}
+                    onVolumeChange={(e) => setVideoMuted(e.currentTarget.muted)}
+                    onError={() => setVideoError(true)}
+                  >
+                    <source src={activeVideoSrc} type={activeVideoMime} />
+                  </video>
+                )
+              ) : (
+                <img
+                  src={activeMedia?.src}
+                  alt={`${product.name} preview`}
+                  className="pointer-events-auto max-w-full max-h-full object-contain transition-transform duration-200"
+                  style={{ transform: `scale(${zoomLevel})` }}
+                />
+              )}
             </div>
 
-            <div
-              className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-white/[0.1] backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
-              onClick={(e) => e.stopPropagation()}
-              role="toolbar"
-              aria-label="Zoom controls"
-            >
-              <button
-                type="button"
-                onClick={zoomOut}
-                className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
-                disabled={zoomLevel <= MIN_ZOOM}
-                aria-label="Zoom out"
+            {isActiveVideo ? (
+              activeMedia.videoKind === "file" ? (
+                <div
+                  className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-white/[0.1] backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                  onClick={(e) => e.stopPropagation()}
+                  role="toolbar"
+                  aria-label="Video controls"
+                >
+                  <button
+                    type="button"
+                    onClick={toggleVideoPlay}
+                    className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center transition-all hover:bg-white/[0.18]"
+                    aria-label={videoPlaying ? "Pause video" : "Play video"}
+                  >
+                    <span className="material-symbols-outlined text-[20px] leading-none">
+                      {videoPlaying ? "pause" : "play_arrow"}
+                    </span>
+                  </button>
+                  <span className="text-white text-sm min-w-[88px] text-center font-medium">Video review</span>
+                  <button
+                    type="button"
+                    onClick={toggleVideoMute}
+                    className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center transition-all hover:bg-white/[0.18]"
+                    aria-label={videoMuted ? "Unmute video" : "Mute video"}
+                  >
+                    <span className="material-symbols-outlined text-[20px] leading-none">
+                      {videoMuted ? "volume_off" : "volume_up"}
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2 bg-white/[0.1] backdrop-blur-md border border-white/20 rounded-full text-white text-sm font-medium shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Video review
+                </div>
+              )
+            ) : (
+              <div
+                className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-white/[0.1] backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                onClick={(e) => e.stopPropagation()}
+                role="toolbar"
+                aria-label="Zoom controls"
               >
-                −
-              </button>
-              <span className="text-white text-sm min-w-[52px] text-center font-medium tabular-nums">
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                type="button"
-                onClick={zoomIn}
-                className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
-                disabled={zoomLevel >= MAX_ZOOM}
-                aria-label="Zoom in"
-              >
-                +
-              </button>
-              <button
-                type="button"
-                onClick={resetZoom}
-                className="px-3 h-8 rounded-full bg-white/10 text-white text-xs font-medium transition-all hover:bg-white/[0.18]"
-              >
-                Reset
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={zoomOut}
+                  className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
+                  disabled={zoomLevel <= MIN_ZOOM}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <span className="text-white text-sm min-w-[52px] text-center font-medium tabular-nums">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={zoomIn}
+                  className="w-8 h-8 rounded-full bg-white/10 text-white text-lg flex items-center justify-center transition-all hover:bg-white/[0.18] disabled:opacity-35"
+                  disabled={zoomLevel >= MAX_ZOOM}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={resetZoom}
+                  className="px-3 h-8 rounded-full bg-white/10 text-white text-xs font-medium transition-all hover:bg-white/[0.18]"
+                >
+                  Reset
+                </button>
+              </div>
+            )}
           </div>,
           document.body,
         )}
