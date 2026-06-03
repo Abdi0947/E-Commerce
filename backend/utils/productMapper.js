@@ -1,3 +1,10 @@
+import { normalizeStoredUploadUrl } from "./uploadUrl.js";
+
+function mapStoredUrl(url) {
+  if (!url) return url;
+  return normalizeStoredUploadUrl(url);
+}
+
 export function rowToProduct(row) {
   if (!row) return null;
   let gallery = row.gallery;
@@ -10,9 +17,11 @@ export function rowToProduct(row) {
   }
   if (!Array.isArray(gallery)) gallery = [];
 
-  const image = row.image;
-  const detailImage = row.detail_image || gallery[1] || image;
-  const galleryOut = gallery.length > 0 ? gallery : [image, detailImage].filter(Boolean);
+  const image = mapStoredUrl(row.image);
+  const detailImage = mapStoredUrl(row.detail_image || gallery[1] || row.image);
+  const galleryOut = (gallery.length > 0 ? gallery : [row.image, row.detail_image || row.image])
+    .filter(Boolean)
+    .map(mapStoredUrl);
 
   return {
     id: row.id,
@@ -26,7 +35,7 @@ export function rowToProduct(row) {
     image,
     detailImage,
     gallery: galleryOut,
-    reviewVideo: row.review_video || "",
+    reviewVideo: mapStoredUrl(row.review_video || "") || "",
     availability: row.availability,
     description: row.description,
     featured: Boolean(row.featured),

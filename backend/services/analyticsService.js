@@ -1,4 +1,5 @@
 import { query } from "../db/pool.js";
+import { normalizeStoredUploadUrl } from "../utils/uploadUrl.js";
 
 export async function recordSiteVisit(sessionId) {
   if (!sessionId || typeof sessionId !== "string" || sessionId.length > 64) {
@@ -73,7 +74,7 @@ export async function getProductViewsSorted() {
     lastViewedAt: row.lastViewedAt,
     name: row.name || `Product #${row.id}`,
     category: row.category || "—",
-    image: row.image || "",
+    image: row.image ? normalizeStoredUploadUrl(row.image) : "",
   }));
 }
 

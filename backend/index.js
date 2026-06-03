@@ -10,11 +10,20 @@ import uploadRoutes from "./routes/upload.routes.js";
 import seoRoutes from "./routes/seo.routes.js";
 import { seedProducts } from "./services/productService.js";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
 
+// Serve uploaded media (use /api/files on cPanel when only /api is proxied to Node)
+app.use("/api/files", uploadsStatic);
+app.use("/api/files", (_req, res, next) => {
+  if (res.headersSent) return next();
+  res.status(404).send("File not found");
+});
+
+// Legacy path (local dev or Apache public_html/uploads alias)
 app.use("/uploads", uploadsStatic);
 app.use("/uploads", (_req, res, next) => {
   if (res.headersSent) return next();
@@ -26,12 +35,26 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
-// app.use(
-//   cors({
-//     origin: config.frontendUrl,
-//     credentials: true,
-//   }),
-// );
+const allowedOrigins = [
+  "http://ninamart.ethioperparation.com",
+  "https://ninamart.ethioperparation.com"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(null, true); // ⚡ allows ANY origin (safe dev fix)
+  },
+  credentials: true
+}));
+
+app.options("*", cors());
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_req, res) => {

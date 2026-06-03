@@ -2,19 +2,10 @@ import fs from "fs/promises";
 import path from "path";
 import { uploadsDir } from "../config.js";
 
-const UPLOAD_PATH_PREFIX = "/uploads/";
+const UPLOAD_PREFIXES = ["/uploads/", "/api/files/"];
 
-export function isLocalUploadUrl(url) {
-  if (!url || typeof url !== "string") return false;
-  if (url.startsWith(UPLOAD_PATH_PREFIX)) return true;
-  try {
-    return new URL(url).pathname.startsWith(UPLOAD_PATH_PREFIX);
-  } catch {
-    return false;
-  }
-}
-
-export function uploadUrlToFilesystemPath(url) {
+function uploadPathname(url) {
+  if (!url || typeof url !== "string") return null;
   let pathname = url;
   if (!url.startsWith("/")) {
     try {
@@ -23,9 +14,23 @@ export function uploadUrlToFilesystemPath(url) {
       return null;
     }
   }
-  if (!pathname.startsWith(UPLOAD_PATH_PREFIX)) return null;
+  for (const prefix of UPLOAD_PREFIXES) {
+    if (pathname.startsWith(prefix)) {
+      return pathname.slice(prefix.length);
+    }
+  }
+  return null;
+}
 
-  const filename = path.basename(pathname);
+export function isLocalUploadUrl(url) {
+  return uploadPathname(url) !== null;
+}
+
+export function uploadUrlToFilesystemPath(url) {
+  const relative = uploadPathname(url);
+  if (!relative) return null;
+
+  const filename = path.basename(relative);
   if (!filename || filename.includes("..")) return null;
 
   const resolved = path.resolve(uploadsDir, filename);

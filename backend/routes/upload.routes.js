@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { uploadImage, uploadVideo } from "../middleware/upload.js";
+import { publicUploadUrl } from "../utils/uploadUrl.js";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.post("/image", requireAuth, (req, res) => {
       return res.status(400).json({ error: "No image file provided." });
     }
 
-    const url = `/uploads/${req.file.filename}`;
+    const url = publicUploadUrl(req.file.filename);
     res.status(201).json({
       url,
       filename: req.file.filename,
@@ -40,7 +41,7 @@ router.post("/video", requireAuth, (req, res) => {
       return res.status(400).json({ error: "No video file provided." });
     }
 
-    const url = `/uploads/${req.file.filename}`;
+    const url = publicUploadUrl(req.file.filename);
     res.status(201).json({
       url,
       filename: req.file.filename,

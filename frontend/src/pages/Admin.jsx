@@ -4,6 +4,7 @@ import * as authApi from "../api/auth.js";
 import * as productsApi from "../api/products.js";
 import { uploadProductImage, uploadProductVideo } from "../api/uploads.js";
 import { getAnalyticsSummary, getProductViewsSorted, resetAnalytics } from "../utils/analytics";
+import { resolveMediaUrl } from "../utils/resolveMediaUrl";
 import { getToken } from "../api/client.js";
 import { DESCRIPTION_SEPARATOR } from "../utils/parseProductDescription";
 const PRODUCT_VIEWS_PAGE_SIZE = 5;
@@ -656,7 +657,7 @@ export default function Admin({ navigate }) {
                         <div className="flex items-center gap-3">
                           {row.image ? (
                             <img
-                              src={row.image}
+                              src={resolveMediaUrl(row.image)}
                               alt=""
                               className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
                             />
@@ -915,7 +916,7 @@ export default function Admin({ navigate }) {
                       className={`p-3 transition-colors ${p.isVisible === false ? "bg-slate-100/80 opacity-75" : "hover:bg-slate-50"}`}
                     >
                       <div className="flex items-center gap-3">
-                        <img src={p.image} alt={p.name} className="w-14 h-14 object-contain rounded-lg bg-white border border-slate-200 p-1 shrink-0" />
+                        <img src={resolveMediaUrl(p.image)} alt={p.name} className="w-14 h-14 object-contain rounded-lg bg-white border border-slate-200 p-1 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
@@ -1080,7 +1081,7 @@ function AdminImageField({
       </div>
       {value && (
         <img
-          src={value}
+          src={resolveMediaUrl(value)}
           alt=""
           className="h-20 w-20 object-contain rounded-lg border border-slate-200 bg-white mb-3"
         />

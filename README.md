@@ -35,6 +35,14 @@ npm run dev
 
 Store: `http://localhost:5173` — API requests proxy to port 3001.
 
+### cPanel / production
+
+See **[DEPLOY-CPANEL.md](./DEPLOY-CPANEL.md)** for upload paths, `.env` settings, and fixing images/videos online.
+
+- Uploads are stored in `backend/uploads/` on the server
+- Browsers load them at `/api/files/...` (proxied with `/api` to Node)
+- Build frontend with `frontend/.env.production` (`VITE_UPLOADS_PUBLIC_URL=/api/files`)
+
 ### Admin login
 
 
