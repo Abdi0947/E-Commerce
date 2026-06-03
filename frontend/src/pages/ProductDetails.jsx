@@ -484,14 +484,6 @@ export default function ProductDetails({ productId, navigate }) {
 
             <FeatureStrip embedded />
 
-            <div className="mb-6">
-              <p className="text-sm text-slate-600 mb-2">Color:</p>
-              <div className="flex gap-2">
-                <button className="w-7 h-7 rounded-full bg-slate-700 ring-2 ring-primary ring-offset-2" />
-                <button className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200" />
-              </div>
-            </div>
-
             <div className="rounded-xl border border-primary/30 p-5 mb-5">
               <h4 className="font-bold text-slate-900 mb-1">Need Help? Contact Us</h4>
               <p className="text-sm text-slate-500 mb-4">Have questions about this product? Our team is here to help you.</p>
