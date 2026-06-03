@@ -7,6 +7,7 @@ import authRoutes, { ensureAdminUser } from "./routes/auth.routes.js";
 import productsRoutes from "./routes/products.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
+import seoRoutes from "./routes/seo.routes.js";
 import { seedProducts } from "./services/productService.js";
 import dotenv from "dotenv";
 
@@ -27,6 +28,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/", seoRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/analytics", analyticsRoutes);

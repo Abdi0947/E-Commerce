@@ -113,6 +113,48 @@ export default function ProductDetails({ productId, navigate }) {
   const zoomOut = () => setZoomLevel((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(1)));
   const resetZoom = () => setZoomLevel(DEFAULT_ZOOM);
 
+  useEffect(() => {
+    // Basic dynamic SEO for crawlers that execute JS.
+    // Must run on every render to keep hook order stable.
+    if (!product) return;
+
+    const title = `${product.name} | NINA Mart`;
+    document.title = title;
+
+    const desc = (parseProductDescription(product.description)[0] || "").slice(0, 160);
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute("content", desc || `Buy ${product.name} at NINA Mart.`);
+  }, [product]);
+
+  const productJsonLd = useMemo(() => {
+    if (!product) return null;
+    const img = product.image || product.detailImage || (Array.isArray(product.gallery) ? product.gallery[0] : "");
+    const price = Number(product.price);
+    return {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      image: img ? [img] : undefined,
+      description: product.description,
+      category: product.category,
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "ETB",
+        price: Number.isFinite(price) ? price : undefined,
+        availability:
+          product.availability === "available"
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
+        url: `/product/${encodeURIComponent(String(product.id))}`,
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: Number(product.rating) || 0,
+        reviewCount: Number(product.reviewCount) || 0,
+      },
+    };
+  }, [product]);
+
   if (loading) {
     return (
       <div className="text-center py-20 text-slate-500">
@@ -138,6 +180,9 @@ export default function ProductDetails({ productId, navigate }) {
 
   return (
     <main className="bg-white pb-12 animate-fade-in">
+      {productJsonLd && (
+        <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
+      )}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4">
         <div className="text-[12px] text-slate-400 mb-4">
           Home <span className="mx-1.5">›</span> Product <span className="mx-1.5">›</span>{" "}

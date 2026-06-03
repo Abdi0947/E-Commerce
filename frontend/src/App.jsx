@@ -7,10 +7,32 @@ import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import { recordSiteVisit, recordProductView } from "./utils/analytics";
 
+function parseRouteFromLocation() {
+  const path = window.location.pathname || "/";
+
+  if (path === "/contact") return { page: "contact", productId: null, scrollTarget: null };
+  if (path === "/admin") return { page: "admin", productId: null, scrollTarget: null };
+
+  const productMatch = path.match(/^\/product\/([^/]+)$/);
+  if (productMatch) return { page: "product", productId: productMatch[1], scrollTarget: null };
+
+  const hash = (window.location.hash || "").replace(/^#/, "");
+  return { page: "home", productId: null, scrollTarget: hash || null };
+}
+
+function routeToUrl(target, scroll = null, id = null) {
+  if (target === "contact") return "/contact";
+  if (target === "admin") return "/admin";
+  if (target === "product" && id != null) return `/product/${encodeURIComponent(String(id))}`;
+  if (target === "home" && scroll) return `/#${encodeURIComponent(String(scroll))}`;
+  return "/";
+}
+
 function App() {
-  const [page, setPage] = useState("home");
-  const [productId, setProductId] = useState(null);
-  const [scrollTarget, setScrollTarget] = useState(null);
+  const initial = parseRouteFromLocation();
+  const [page, setPage] = useState(initial.page);
+  const [productId, setProductId] = useState(initial.productId);
+  const [scrollTarget, setScrollTarget] = useState(initial.scrollTarget);
   const [homeSection, setHomeSection] = useState(null);
   const [showAdminFab, setShowAdminFab] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +42,11 @@ function App() {
     if (target === "product" && id != null) {
       recordProductView(id);
     }
+    const nextUrl = routeToUrl(target, scroll, id);
     const pageChanging = target !== page;
+    if (window.location.pathname + window.location.search + window.location.hash !== nextUrl) {
+      window.history.pushState({}, "", nextUrl);
+    }
     setPage(target);
     setProductId(id);
     setScrollTarget(scroll);
@@ -34,6 +60,18 @@ function App() {
     if (page !== "admin") {
       recordSiteVisit();
     }
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const next = parseRouteFromLocation();
+      setPage(next.page);
+      setProductId(next.productId);
+      setScrollTarget(next.scrollTarget);
+      setHomeSection(next.page === "home" ? next.scrollTarget : null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const HOME_SCROLL_TARGETS = ["products", "categories", "popular", "best-sellers"];
