@@ -227,6 +227,35 @@ export default function Admin({ navigate }) {
     }
   };
 
+  const handleGalleryFilesUpload = async (fileList) => {
+    const files = Array.from(fileList || []).filter((f) => f?.type?.startsWith("image/"));
+    if (!files.length) {
+      setFormError("Please select one or more image files (JPG, PNG, WebP, or GIF).");
+      return;
+    }
+    setFormError("");
+    setUploadingField(`gallery-bulk-${files.length}`);
+    try {
+      const results = await Promise.all(files.map((file) => uploadProductImage(file)));
+      const urls = results.map((r) => r.url);
+      setForm((prev) => {
+        const next = [...prev.galleryImages];
+        for (const url of urls) {
+          const emptyIdx = next.findIndex((img) => !img.trim());
+          if (emptyIdx >= 0) next[emptyIdx] = url;
+          else next.push(url);
+        }
+        const filled = next.filter((img) => img.trim());
+        return { ...prev, galleryImages: filled.length > 0 ? filled : [""] };
+      });
+      showSuccess(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded.`);
+    } catch (err) {
+      setFormError(err.message || "Gallery upload failed.");
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const handleVideoFileUpload = async (file) => {
     if (!file) return;
     if (!file.type.startsWith("video/")) {
@@ -796,8 +825,25 @@ export default function Admin({ navigate }) {
                   Product Gallery Images
                 </label>
                 <p className="text-xs text-slate-400 mt-1 mb-2">
-                  Upload or paste URL for each image. At least 2 images total (home + gallery).
+                  Upload multiple images at once or add individually. At least 2 images total (home + gallery).
                 </p>
+                <label className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-primary bg-primary/5 text-primary text-sm font-semibold cursor-pointer hover:bg-primary/10 mb-3">
+                  <span className="material-symbols-outlined text-base leading-none">photo_library</span>
+                  {typeof uploadingField === "string" && uploadingField.startsWith("gallery-bulk")
+                    ? `Uploading ${uploadingField.replace("gallery-bulk-", "")} image${uploadingField.replace("gallery-bulk-", "") === "1" ? "" : "s"}…`
+                    : "Upload multiple images"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
+                    className="sr-only"
+                    disabled={typeof uploadingField === "string" && uploadingField.startsWith("gallery-bulk")}
+                    onChange={(e) => {
+                      handleGalleryFilesUpload(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
                 <div className="space-y-3 mt-1">
                   {form.galleryImages.map((img, idx) => (
                     <AdminImageField
