@@ -35,7 +35,7 @@ export default function Navbar({ page, homeSection, navigate, onSearch }) {
 
   const categories = [
     "All Categories", "Smartphones", "Laptops", "Headphones",
-    "Smartwatches", "Cameras", "Speakers", "Accessories",
+    "Smartwatches", "Cameras", "Speakers", "Accessories","light", "others"
   ];
 
   const normalizeCategory = (label) =>
