@@ -3,7 +3,7 @@ import ProductCard from "./ProductCard";
 
 export default function ProductCarousel({ title, products, navigate, sectionId }) {
   const [offset, setOffset] = useState(0);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const CARD_W = 220 + 16;
   const visibleCount = 5;

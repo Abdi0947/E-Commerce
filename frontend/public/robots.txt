@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ninamart.ethioperparation.com/sitemap.xml
